@@ -1,0 +1,94 @@
+{{ define "layout" }}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/static/layout.css" />
+    <link rel="stylesheet" href="/static/clone_button.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ block "title" . }}Leadway{{ end }}</title>
+    <link rel="stylesheet" href="/static/clone_form.css">
+    <link rel="stylesheet" href="/static/clone_form.css">
+    <link rel="stylesheet" href="/static/voice_card.css">
+    <link rel="stylesheet" href="/static/voice_grid.css">
+    <link rel="stylesheet" href="/static/generate_video.css">
+    <link rel="stylesheet" href="/static/recorder.css">
+</head>
+
+<body>
+    <div id="overlay" class="overlay"></div>
+   <div class="nav-bar-container">
+        <div class="left-container">
+            <img src="/static/imgs/leadway_logo.png" class="leadway-logo">
+        </div>
+       
+        <div class="middle-container">
+            <input type="text" placeholder="Search" name="text" class="search-input">
+        </div>
+        <div class="right-container">
+            <button class="btn" id="clone-button"> Clone + </button>
+        </div>
+   </div>
+   <div class="sidebar">
+        <ul>
+            <li>Assistants</li>
+            <li>Teams</li>
+            <li>Knowledge Base</li>
+            <li>Custom Actions</li>
+            <li><a href="/api/record">Record</a></li>
+            <li>Contacts</li>
+            <li><a href="/api/video_series">Series</a></li>
+            <li ><a href="/api/videos">Upload</a></li>
+        </ul>
+   </div>
+
+   <main class="main-container">
+        <div class="form-container" id="form-container">
+            <form id="uploadForm" enctype="multipart/form-data">
+                <h2>Upload & Clone Voice</h2>
+                <input  class="voice-name-input" type="text" id="name" name="name" placeholder="Enter Voice Name" required>
+                <input class="voice-mp3-input" type="file" name="voice" accept=".mp3" required>
+                <br><br>
+                <button type="submit">Upload & Clone Voice</button>
+            </form>
+        </div>
+        {{block "content" .}}{{ end }}
+   </main>
+   <script>
+    document.getElementById("clone-button").addEventListener("click", () => {
+    document.getElementById("form-container").style.display = "block";
+    document.getElementById("overlay").style.display = "block";
+    });
+
+
+    document.getElementById("overlay").addEventListener("click", () => {
+    document.getElementById("form-container").style.display = "none";
+    document.getElementById("overlay").style.display = "none";
+    });
+
+    const form = document.getElementById("uploadForm");
+
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault(); 
+        const name = document.getElementById("name").value;
+    
+        let formData = new FormData(event.target);
+
+        formData.append("voice_name", name);
+        try {
+            const response = await fetch("/api/clone-voice", {
+                method: "POST",
+                body: formData
+            });
+        } catch (error) {
+            console.error("Network error: ", error);
+        }
+    })
+</script>
+</body>
+
+
+
+</html>
+{{ end }}

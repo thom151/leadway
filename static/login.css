@@ -1,0 +1,97 @@
+*, ::before, ::after{
+    padding:0;
+    margin:0;
+    box-sizing:border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+html {
+    font-size: 62.5%;
+}
+
+body {
+    display:flex;
+    justify-content: center;
+    align-items: center;
+    height:100vh;
+    background: linear-gradient(to right, #1f1f20, #000000);
+}
+
+.login-container {
+    background-color: #fff;
+    width:400px;
+    padding:30px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+   
+}
+
+.login-container h2 {
+    margin-bottom: 25px;
+    font-size: 26px;
+    color: #333;
+    font-weight: 600;
+}
+
+.input-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.input-group label {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 6px;
+    color: #555;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 14px;
+    border: 1px solid #ddd;
+    background: #f9f9f9;
+    color: #555;
+    outline: none;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.input-group input:focus {
+    border-color: #555;
+}
+
+.btn {
+    width: 100%;
+    padding: 14px;
+    background: #000000;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    margin-top: 20px;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 500;
+    transition: background 0.3s;
+}
+.btn:hover {
+    background: #555;
+}
+
+.options {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-top: 15px;
+    color: #555;
+}
+.options a {
+    color: #000;
+    text-decoration: none;
+    font-weight: 500;
+}
+.options a:hover {
+    text-decoration: underline;
+}

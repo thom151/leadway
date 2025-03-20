@@ -1,0 +1,59 @@
+{{ define "title" }}Home Page{{ end }}
+
+{{ define "content" }}
+<div id="main-recorder-container" class="main-recorder-container">
+    <div class="video-container">
+        <div id="video-wrapper" class="video-wrapper">
+            <video muted id="record-video" class="record-video" autoplay></video>
+        </div>
+        <div class="button-container">
+            <button id="start-btn">Start Recording</button>
+            <button id="stop-btn">Stop Recording</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const parts = [];
+    let mediaRecorder;
+    const videoWrapper = document.getElementById("video-wrapper");
+    const videoElement = document.getElementById("record-video");
+
+    // Start video stream
+    navigator.mediaDevices.getUserMedia({ audio: true, video: true }).then(stream => {
+        videoElement.srcObject = stream;
+
+        document.getElementById("start-btn").onclick = function () {
+            // Expand video to full screen
+            videoWrapper.classList.add("full-screen");
+            videoElement.classList.add("full-screen");
+
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.start(1000);
+
+            mediaRecorder.ondataavailable = function (e) {
+                parts.push(e.data);
+            };
+        };
+    });
+
+    document.getElementById("stop-btn").onclick = function () {
+        // Revert video to original size
+        videoWrapper.classList.remove("full-screen");
+        videoElement.classList.remove("full-screen");
+
+        mediaRecorder.stop();
+
+        const blob = new Blob(parts, {
+            type: "video/webm"
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        document.body.appendChild(a);
+        a.style = "display: none";
+        a.href = url;
+        a.download = "test.webm";
+        a.click();
+    };
+</script>
+{{ end }}

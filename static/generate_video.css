@@ -1,0 +1,19 @@
+#series-container {
+    background-color: white;
+    display: flex;
+    flex-direction: row;
+    color: white;
+}
+
+.form-containers {
+    background-color: rgb(42, 50, 53);
+    flex: 1;
+}
+
+.videos {
+    flex:1;
+}
+
+.video-player {
+    width:500px;
+}

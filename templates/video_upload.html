@@ -1,0 +1,94 @@
+{{ define "title" }}Home Page{{ end }}
+
+
+{{ define "content" }}
+
+    <button id="create-series-btn" class="btn"><a href="/api/video_series">Create Series</a></button>
+    <form  id="video-meta-form">
+        <div class="input-group">
+            <label for="title">Title</label>
+            <input type="text" id="title" name="title" required placeholder="Title">
+        </div>
+        <div class="input-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" placeholder="Description"></textarea>
+        </div>
+        <button type="submit" class="btn">Create Video</button>
+    </form>
+
+    <form id="video-upload-form" style="display: none;">
+        <div class="input-group">
+            <label for="video-file">File: </label>
+            <input type="file" id="video-file" name="video-file" required>
+        </div>
+        <button type="submit" class="btn">Create Video</button>
+    </form>
+
+    <script>
+         const metaForm = document.getElementById("video-meta-form")
+    metaForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const title = document.getElementById("title").value;
+        const description = document.getElementById("description").value;
+    
+        const payload = {
+            title : title,
+            description : description,
+        };
+    
+        try {
+            const response = await fetch("/api/videos", {
+                method:"POST",
+                headers: {
+                    "Content-Type":"application/json"
+                },
+                body:JSON.stringify(payload),
+            });
+            
+            if (response.ok) {
+                
+                const data = await response.json()
+                const videoId = data.ID;
+                console.log("DataID:", data.ID)
+                showUploadComponent(videoId);
+    
+            }
+        } catch (error) {
+            console.error("Error: ", error)
+        }
+
+    });
+
+    function showUploadComponent(videoId) {
+    const uploadForm = document.getElementById("video-upload-form");
+    uploadForm.dataset.videoId = videoId;
+    uploadForm.style.display = "block";
+
+    uploadForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            
+            const form = event.target;
+            const videoId = form.dataset.videoId;
+            const fileInput = form.querySelector("input[type=file]");
+
+            const formData = new FormData();
+            formData.append("video", fileInput.files[0]);
+            try {
+                const response = await fetch(`/api/video_upload/${videoId}`,{
+                method:"POST",
+                body: formData
+            } );
+
+            if (!response.ok) {
+                throw new Error("Netowkr response was not ok")
+            }
+            console.log("Video Uploaded Successfully")
+            } catch(error) {
+                console.error("error: ", error)
+            }
+            
+
+    }, {once:true})
+}
+    </script>
+{{ end }}

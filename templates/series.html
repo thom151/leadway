@@ -1,0 +1,217 @@
+{{ define "title" }}Home Page{{ end }}
+
+
+{{ define "content" }}
+
+<div class="series-container" id="series-container">
+    <div class="form-containers">
+        <form id="client-create-form">
+            <div class="input-group">
+                <label for="client-name">Name</label>
+                <input type="text" id="client-name", name="client-name" required>
+            </div>
+            <div class="input-group">
+                <label for="client-email">Email</label>
+                <input type="email" id="client-email", name="client-email" required>
+            </div>
+            <div class="input-group">
+                <label for="client-phone">Phone</label>
+                <input type="text" id="client-phone", name="client-phone">
+            </div>
+            <div class="input-group">
+                <label for="client-address">Address</label>
+                <input type="text" id="client-address", name="client-address" required>
+            </div>
+            <button class="btn" id="create-client-button">Create Client</button>
+        </form>
+
+        <form id="video-series-form">
+            <div class="input-group">
+                <label for="title">Title</label>
+                <input type="text" id="title" name="title" required placeholder="Title">
+            </div>
+            <div class="input-group">
+                <label for="customize">Personalize Message: </label>
+                <textarea id="customize"></textarea>
+            </div>
+            <div class="input-group">
+                <label for="clients">Choose a client:</label>
+                <select name="clients" id="clients">
+                    {{ if .Clients}}
+                        {{range .Clients}}
+                            <option value="{{.ID}}">{{.Name}}</option>
+                        {{ end }}
+                    {{end}}
+                </select>
+            </div>
+            <button class="btn" id="create-client-button">Generate Video</button>
+        </form>
+
+
+        <form id="video-series-confirmation-form" style="display: none;">
+            <div id="confirm-title"></div>
+            <div id="confirm-client-name"></div>
+            <div id="confirm-client-address"></div>
+            <div id="confirm-personalize"></div>
+            <div id="confirm-video"></div>
+            <button class="btn" id="confirm-btn">Confirm</button>
+        </form>
+    </div>
+
+    <div class="videos">
+        {{ if .Videos}}
+            {{range .Videos }}
+                <video class="video-player" value="{{.ID}}" controls style="display: block;" src="{{.S3Url.String}}"></video>
+                <button value="{{.ID}}" class="select-video-button">Select Video</button>
+            {{end}}
+
+        {{end}}
+    </div>
+</div>
+<script>
+    const client_form = document.getElementById("client-create-form");  
+    const video_series_form = document.getElementById("video-series-form")
+    const confirmation_form = document.getElementById("video-series-confirmation-form")
+    const client_select = document.getElementById("clients")
+    const selectButtons = document.querySelectorAll(".select-video-button");
+    videoID = "";
+    selectButtons.forEach(button => {
+        button.addEventListener("click", (event) => {
+            videoID= event.target.value;
+            console.log("Video ID", videoID)
+        })
+    })
+
+
+    client_form.addEventListener("submit", async (event) => {
+            event.preventDefault()
+            const name = document.getElementById("client-name").value;
+            const email = document.getElementById("client-email").value;
+            const phone = document.getElementById("client-phone").value;
+            const address = document.getElementById("client-address").value
+            
+            const payload = {
+                name : name,
+                email : email,
+                phone : phone,
+                address : address,
+            };
+
+            try {
+                const response = await fetch("/api/create_client", {
+                        method: "POST",
+                        headers : {
+                            "Content-Type":"application/json",
+                        },
+                        body : JSON.stringify(payload)
+
+                });
+                if (!response.ok) {
+                    throw new Error ("network error: failed to create client")
+                }
+
+                const newClient = await response.json();
+                console.log("Created Client: ", newClient);
+
+                const opetion = document.createElement("option");
+                option.value = newClient.ID;
+                option.text = newClient.Name;
+                client_select.appendChild(option);
+
+                client_form.reset();
+
+
+            } catch (error) {
+                console.log("error: ", error)
+            }
+
+    })
+
+
+    video_series_form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const clientID = document.getElementById("clients").value;
+            const personalize = document.getElementById("customize").value;
+            const title = document.getElementById("title").value;
+
+            console.log("Video ID", videoID)
+            const payload = {
+                title : title,
+                client_id : clientID,
+                personalize : personalize,
+                video_id : videoID,
+            }
+
+            try {
+                const response = await fetch("/api/video_series_meta", {
+                    method: "POST",
+                    headers : {
+                        "Content-Type" : "application/json",
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error ("network error: failed to create video series meta")
+                }
+
+
+                const result = await response.json();
+
+                const confirmForm = document.getElementById("video-series-confirmation-form");
+                confirmForm.style.display = "block";
+
+                document.getElementById("confirm-title").textContent = `Title: ${result.VideoSeriesMeta.Title}`;
+                document.getElementById("confirm-client-name").textContent = `Client Name: ${result.ClientDetails.Name}`; // Adjust based on actual client name
+                document.getElementById("confirm-client-address").textContent = `Client Address: ${result.ClientDetails.Address.String}`; // Need client address from response
+                document.getElementById("confirm-personalize").textContent = `Personalized Message: ${result.VideoSeriesMeta.Description.String || "None"}`;
+                document.getElementById("confirm-video").textContent = `Video Template ID: ${result.VideoTemplateID}`; 
+                document.getElementById("confirm-client-name").value = result.ClientDetails.ID;      
+                document.getElementById("confirm-title").value=result.VideoSeriesMeta.ID;          
+
+                
+
+            } catch (error) {
+                console.log("Error: ", error);
+            }
+    })
+
+
+   
+    confirmation_form.addEventListener("submit", async (event) => {
+                    event.preventDefault();
+                    const payload = {
+                        video_id: document.getElementById("confirm-video").textContent.replace("Video Template ID: ", ""),
+                        client_id: document.getElementById("confirm-client-name").value, 
+                        personalized: document.getElementById("confirm-personalize").textContent.replace("Personalized Message: ", ""),
+                        series_id: document.getElementById("confirm-title").value, 
+                    }
+
+                    try {
+                        const response = await fetch("/api/video_series", {
+                            method: "POST",
+                            "Content-Type": "application/json",
+                            body: JSON.stringify(payload),
+                        });
+
+                        if (!response.ok) {
+                           throw new Error ("network error: failed to create video series")
+                        }
+
+                        const seriesResult = await response.json();
+                        console.log(seriesResult.S3Url.String)
+                        confirmationForm.style.display = "none"; // Hide form on success
+                        alert("Video series created successfully!");
+                    } catch (error) {
+                        console.log("Error: ", error)
+
+                    }
+
+
+                    
+
+                })    
+
+</script>
+{{ end }}
+

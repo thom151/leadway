@@ -1,0 +1,12 @@
+-- +goose Up
+CREATE TABLE threads (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    thread_id TEXT NOT NULL,
+    contact_id TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE 
+);
+
+-- +goose Down
+DROP TABLE threads;

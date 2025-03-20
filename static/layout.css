@@ -1,0 +1,90 @@
+*, ::before, ::after{
+    padding:0;
+    margin:0;
+    box-sizing:border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+html {
+    font-size: 62.5%;
+}
+
+body {
+    background-color: #000;
+    padding-top: 80px;
+    height:3000px;
+    padding-left:  210px;
+}
+
+.nav-bar-container {
+    display: flex;
+    padding-left: 20px;
+    padding-right: 20px;
+    justify-content: space-between;
+    background-color: #000;
+    position: fixed;
+    height:70px;
+    left:0;
+    right:0;
+    top: 0;
+    z-index: 999;
+}
+
+.left-container{
+    display: flex;
+    align-items: center;
+}
+
+.leadway-logo{
+    object-fit: contain;
+    width: 100px;
+}
+
+.middle-container {
+    position:relative;
+    display:flex;
+    align-items: center;
+}
+
+.middle-container .search-input {
+    width: 200px;
+    padding: 10px 0px 10px 40px;
+    border-radius: 9999px;
+    border: solid 1px #000000;
+    transition: all .2s ease-in-out;
+    outline: none;
+    opacity: 0.8;
+    background-color: #fff;
+}
+  
+.middle-container .search-input:focus {
+    opacity: 1;
+    width: 250px;
+}
+
+.right-container {
+    display: flex; 
+    align-items: center;
+}
+
+.sidebar {
+    background-color: #000;
+    position:fixed;
+    display: flex;
+    top:70px;
+    width: 200px;
+    bottom:0;
+    left:0;
+}
+.sidebar ul li {
+    padding: 10px;
+    cursor: pointer;
+    transition: 0.3s;
+    color: #f2f2f2;
+    font-size: 12px;
+}
+.sidebar ul li:hover {
+    background: #d2d2d2;
+    border-radius: 5px;
+}
+
