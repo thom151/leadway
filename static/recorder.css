@@ -1,19 +1,22 @@
 .main-recorder-container {
     background-color: lightcoral;
     display: flex;
-    justify-content: center; /* Center horizontally */
-    min-height: 100vh; /* Ensure it takes the full viewport height */
+    justify-content: center;
+    min-height: 100vh;
+    position: relative; /* Ensure no conflicting stacking context */
+    z-index: 1; /* Low z-index to avoid interference with full-screen video */
 }
 
 .video-container {
     display: flex;
     flex-direction: column;
-    align-items: center; /* Center children (video and buttons) */
+    align-items: center;
 }
 
 .video-wrapper {
-    width: 640px; /* Default width */
-    height: 480px; /* Default height */
+    width: 640px;
+    height: 480px;
+    background-color: brown;
     transition: width 0.6s ease-in-out, height 0.6s ease-in-out, left 0.6s ease-in-out, right 0.6s ease-in-out, top 0.6s ease-in-out, bottom 0.6s ease-in-out; /* Smooth transition for specific properties */
 }
 
@@ -23,16 +26,16 @@
     right: 0;
     top: 0;
     bottom: 0;
-    width: 100vw; 
-    height: 100vh; 
+    width: 100vw;
+    height: 100vh;
 }
 
 .record-video {
     background-color: lightblue;
     width: 100%;
     height: 100%;
-    object-fit: cover; 
-    transition: width 0.6s ease-in-out, height 0.6s ease-in-out, left 0.6s ease-in-out, right 0.6s ease-in-out, top 0.6s ease-in-out, bottom 0.6s ease-in-out; 
+    object-fit: cover;
+    transition: width 0.6s ease-in-out, height 0.6s ease-in-out, left 0.6s ease-in-out, right 0.6s ease-in-out, top 0.6s ease-in-out, bottom 0.6s ease-in-out;
 }
 
 .record-video.full-screen {
@@ -41,7 +44,50 @@
     right: 0;
     top: 0;
     bottom: 0;
+    width: 100vw; /* Explicitly set to viewport width */
+    height: 100vh; /* Explicitly set to viewport height */
+   
 }
 
+.button-container {
+    margin-top: 20px; /* Add some spacing for the buttons */
+    display: flex;
+    gap: 10px; /* Space between buttons */
+}
+
+.close-btn{
+    position:fixed;
+    z-index: 1001;
+    top:20px;
+    right:20px;
+
+}
+
+.bi {
+    font-size: xx-large;
+}
+
+
+.teleprompter {
+    z-index: 1002;
+    position:fixed;
+    top:0px;
+    font-size: xx-large;
+    background-color: lightgray;
+    right:25%;
+    left:25%;
+    height:350px;
+    overflow-y: auto;
+    padding-top:100px;
+    scroll-behavior: smooth; /* Smooth scrolling for automatic scroll */
+    /* Hide scrollbar for WebKit browsers (Chrome, Safari, Edge) */
+    -webkit-overflow-scrolling: touch; /* Enable smooth scrolling on touch devices */
+    scrollbar-width: none; /* Hide scrollbar for Firefox */
+    -ms-overflow-style: none; /* Hid*/
+}
+
+.teleprompter::-webkit-scrollbar {
+    display: none; /* Completely hide the scrollbar */
+}
 
 

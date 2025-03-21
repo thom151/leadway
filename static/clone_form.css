@@ -1,5 +1,5 @@
 .form-container {
-    background-color: #2bba1e98;
+    background-color: #151a7d98;
     position: fixed;
     width: 400px;
     height:200px;
@@ -42,23 +42,6 @@ h2 {
 
 .voice-mp3-input {
     cursor: pointer;
-}
-
-button {
-    width: 100%;
-    padding: 10px;
-    background-color: #4caf50;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    font-size: 15px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-    font-weight: bold;
-}
-
-button:hover {
-    background-color: #45a049;
 }
 
 ::placeholder {

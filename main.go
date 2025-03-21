@@ -21,25 +21,22 @@ import (
 )
 
 type apiConfig struct {
-	fileserverHits atomic.Int32
 	db             *database.Queries
+	deepgramConn   *websocket.Conn
+	openaiClient   *openai.Client
+	s3Client       *s3.Client
 	platform       string
 	secret         string
 	elevenApiKey   string
 	openaiApiKey   string
 	assistantID    string
-	twAuthToken    string
-	twAccountSid   string
-	ngrokUrl       string
-	openaiClient   *openai.Client
 	deepgramApiKey string
-	deepgramConn   *websocket.Conn
 	s3Bucket       string
 	s3Region       string
 	s3CfDistro     string
-	s3Client       *s3.Client
+	tavusApiKey    string
+	fileserverHits atomic.Int32
 	mu             sync.Mutex
-	heygenApiKey   string
 }
 
 func main() {
@@ -82,21 +79,6 @@ func main() {
 		log.Fatal("assistant id not working")
 	}
 
-	twAuthToken := os.Getenv("TWILIO_AUTH_TOKEN")
-	if twAuthToken == "" {
-		log.Fatal("twilio auth token not set")
-	}
-
-	twAccountSid := os.Getenv("TWILIO_ACCOUNT_SID")
-	if twAccountSid == "" {
-		log.Fatal("twilio accound sid not set")
-	}
-
-	ngrokUrl := os.Getenv("NGROK_URL")
-	if ngrokUrl == "" {
-		log.Fatal("ngrok url not set")
-	}
-
 	deepgramApiKey := os.Getenv("DEEPGRAM_API_KEY")
 	if deepgramApiKey == "" {
 		log.Fatal("deepgram api key not set")
@@ -117,8 +99,8 @@ func main() {
 		log.Fatal("s3 cf distro not set")
 	}
 
-	heygenApiKey := os.Getenv("HEYGEN_API_KEY")
-	if twAuthToken == "" {
+	tavusApiKey := os.Getenv("TAVUS_API_KEY")
+	if tavusApiKey == "" {
 		log.Fatal("heygen api key not set")
 	}
 
@@ -140,17 +122,16 @@ func main() {
 		db:             dbQueries,
 		platform:       platform,
 		secret:         secret,
-		elevenApiKey:   elevenApiKey,
-		openaiApiKey:   openaiApiKey,
 		assistantID:    assistantID,
-		ngrokUrl:       ngrokUrl,
 		s3Client:       s3Client,
 		s3Bucket:       s3Bucket,
 		s3Region:       s3Region,
 		s3CfDistro:     s3CfDistro,
 		openaiClient:   openai.NewClient(openaiApiKey),
+		elevenApiKey:   elevenApiKey,
+		openaiApiKey:   openaiApiKey,
 		deepgramApiKey: deepgramApiKey,
-		heygenApiKey:   heygenApiKey,
+		tavusApiKey:    tavusApiKey,
 	}
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
@@ -163,12 +144,8 @@ func main() {
 	mux.HandleFunc("/api/users", apiCfg.handlerUsersCreate)
 	mux.HandleFunc("/api/login", apiCfg.handlerLogin)
 	mux.HandleFunc("/api/clone-voice", apiCfg.handlerCloneVoice)
-	mux.HandleFunc("/api/speak", apiCfg.handlerSpeak)
 	mux.HandleFunc("/app/", apiCfg.handlerIndex)
 
-	mux.HandleFunc("/api/call", apiCfg.handleCall)
-	mux.HandleFunc("/api/twiml", apiCfg.handleTwiml)
-	mux.HandleFunc("/api/stream", apiCfg.handleStream)
 	mux.HandleFunc("POST /api/refresh", apiCfg.handlerRefresh)
 	mux.HandleFunc("POST /api/revoke", apiCfg.handlerRevoke)
 

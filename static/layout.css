@@ -10,10 +10,10 @@ html {
 }
 
 body {
-    background-color: #000;
+    background-color: #19adce;
     padding-top: 80px;
     height:3000px;
-    padding-left:  210px;
+    padding-left: 210px;
 }
 
 .nav-bar-container {
@@ -21,7 +21,7 @@ body {
     padding-left: 20px;
     padding-right: 20px;
     justify-content: space-between;
-    background-color: #000;
+    background-color: #a3d026;
     position: fixed;
     height:70px;
     left:0;
@@ -54,7 +54,7 @@ body {
     transition: all .2s ease-in-out;
     outline: none;
     opacity: 0.8;
-    background-color: #fff;
+    background-color: #ffffff;
 }
   
 .middle-container .search-input:focus {
@@ -68,13 +68,23 @@ body {
 }
 
 .sidebar {
-    background-color: #000;
+    background-color: #ed0606;
     position:fixed;
     display: flex;
     top:70px;
+    justify-content: center;
     width: 200px;
     bottom:0;
     left:0;
+}
+
+.sidebar ul {
+    background-color: #c728b5;
+    margin-top:10px;
+    margin-left: 10px;
+    margin-right: 10px;
+    flex: 1;
+    list-style-type: none;
 }
 .sidebar ul li {
     padding: 10px;

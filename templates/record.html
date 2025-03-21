@@ -1,5 +1,10 @@
 {{ define "title" }}Home Page{{ end }}
 
+{{define "stylesheet"}}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+{{end}}
+
+
 {{ define "content" }}
 <div id="main-recorder-container" class="main-recorder-container">
     <div class="video-container">
@@ -9,21 +14,74 @@
         <div class="button-container">
             <button id="start-btn">Start Recording</button>
             <button id="stop-btn">Stop Recording</button>
+            <div class="close-btn" id="close-btn" aria-label="Close"><i class="bi bi-x-lg"></i></div>
+        </div>
+        <div id="teleprompter" class="teleprompter">
+            <div id="script-text" class="script-text">
+
+            </div>
         </div>
     </div>
 </div>
 
 <script>
+    const scriptSegments = [
+        { text: "Hi there! My name is [Your Name], and I’m a real estate agent here to help you find your dream home. I’m recording this video to create a digital replica of myself using Tavus, and I consent to Tavus using this video to generate my replica for personalized client messages.", duration: 20 },
+        { text: "[Pause for 5 seconds, nod slightly, and look thoughtful]", duration: 5, isPause: true },
+        { text: "Let me tell you a bit about what I do. I specialize in helping clients like you find properties that match your needs—whether it’s a cozy family home, a modern condo, or a spacious estate. I’m passionate about making the home-buying process as smooth and exciting as possible.", duration: 25 },
+        { text: "[Smile, gesture with your hand as if explaining something, then pause for 5 seconds]", duration: 5, isPause: true },
+        { text: "One of my favorite parts of this job is getting to know my clients and understanding what they’re looking for. Are you dreaming of a big backyard for your kids to play in? Or maybe a quiet neighborhood with great schools? Whatever it is, I’m here to help you find it.", duration: 25 },
+        { text: "[Look excited, raise your eyebrows slightly, then pause for 5 seconds]", duration: 5, isPause: true },
+        { text: "I also love showing off properties in person or through virtual tours. There’s nothing better than seeing a client’s face light up when they walk into a home and know it’s the one. I’ll be using my Tavus replica to send you personalized video messages about new listings, so you’ll always be the first to know about the perfect property.", duration: 25 },
+        { text: "[Smile warmly, nod, then pause for 5 seconds]", duration: 5, isPause: true },
+        { text: "I’m really looking forward to working with you and helping you find a place you’ll love. Let’s make your home-buying journey a great one!", duration: 15 },
+        { text: "[End with a big smile, wave slightly, and hold the smile for a few seconds]", duration: 5, isPause: true },
+    ];
+
     const parts = [];
     let mediaRecorder;
     const videoWrapper = document.getElementById("video-wrapper");
     const videoElement = document.getElementById("record-video");
+
+    //teleprompter variables
+    let scriptIndex = 0;
+    let scrollInterval;
+    const teleprompterElement = document.getElementById("teleprompter");
+    const scriptTextElement = document.getElementById("script-text");
+    let totalHeight = 0;
+
+    scriptSegments.forEach(segment => {
+        const p = document.createElement("p");
+        p.textContent = segment.text;
+        p.style.margin = "10px 0";
+        if (segment.isPause) {
+            p.style.color = "#FFD700"; // Highlight pause instructions in gold
+        }
+        scriptTextElement.appendChild(p);
+    });
+
+
+
+    function pageScroll() {
+        teleprompterElement.scrollBy(0, 1); // Scroll down by 1 pixel
+        scrollDelay = setTimeout(pageScroll, 75); // Repeat every 10 milliseconds
+        // Stop scrolling if we reach the bottom
+        if (teleprompterElement.scrollTop + teleprompterElement.clientHeight >= scriptTextElement.scrollHeight) {
+            clearTimeout(scrollDelay);
+        }
+    }
+
+
 
     // Start video stream
     navigator.mediaDevices.getUserMedia({ audio: true, video: true }).then(stream => {
         videoElement.srcObject = stream;
 
         document.getElementById("start-btn").onclick = function () {
+
+            document.querySelector(".nav-bar-container").style.display = "none";
+            document.querySelector(".sidebar").style.display = "none";
+
             // Expand video to full screen
             videoWrapper.classList.add("full-screen");
             videoElement.classList.add("full-screen");
@@ -34,10 +92,16 @@
             mediaRecorder.ondataavailable = function (e) {
                 parts.push(e.data);
             };
+
+            teleprompterElement.scrollTop = 0;
+            pageScroll();
         };
     });
 
     document.getElementById("stop-btn").onclick = function () {
+
+        document.querySelector(".nav-bar-container").style.display = "flex";
+        document.querySelector(".sidebar").style.display = "flex";
         // Revert video to original size
         videoWrapper.classList.remove("full-screen");
         videoElement.classList.remove("full-screen");

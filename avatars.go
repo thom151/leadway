@@ -44,7 +44,7 @@ func (cfg *apiConfig) generateAvatar(user database.User, videoUrl string) (strin
 		return "", err
 	}
 
-	req.Header.Set("x-api-key", cfg.heygenApiKey)
+	req.Header.Set("x-api-key", cfg.tavusApiKey)
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
@@ -87,7 +87,7 @@ func (cfg *apiConfig) waitForTrainingComplete(replicaId string) error {
 		if err != nil {
 			return fmt.Errorf("create poll request: %v", err)
 		}
-		req.Header.Set("x-api-key", cfg.heygenApiKey)
+		req.Header.Set("x-api-key", cfg.tavusApiKey)
 		req.Header.Set("Content-Type", "application/json")
 
 		res, err := client.Do(req)
@@ -144,7 +144,7 @@ func (cfg *apiConfig) generateVideoAndGetId(aiResponse, replicaID string) (strin
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("x-api-key", cfg.heygenApiKey)
+	req.Header.Set("x-api-key", cfg.tavusApiKey)
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
@@ -186,7 +186,7 @@ func (cfg *apiConfig) downloadVideo(videoId, outputPath string) error {
 		return err
 	}
 
-	req.Header.Add("x-api-key", cfg.heygenApiKey)
+	req.Header.Add("x-api-key", cfg.tavusApiKey)
 
 	client := &http.Client{}
 	res, err := client.Do(req)
@@ -209,7 +209,7 @@ func (cfg *apiConfig) downloadVideo(videoId, outputPath string) error {
 		if err != nil {
 			return fmt.Errorf("create request: %v", err)
 		}
-		req.Header.Set("x-api-key", cfg.heygenApiKey)
+		req.Header.Set("x-api-key", cfg.tavusApiKey)
 
 		res, err := client.Do(req)
 		if err != nil {

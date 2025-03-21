@@ -1,4 +1,4 @@
-.btn {
+.clone-button {
   position: relative;
   font-size: 12px;
   text-transform: uppercase;
@@ -15,17 +15,17 @@
   background-color: #fff;
 }
 
-.btn:hover {
+.clone-button:hover {
   transform: translateY(-3px);
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
 }
 
-.btn:active {
+.clone-button:active {
   transform: translateY(-1px);
   box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
 }
 
-.btn::after {
+.clone-button::after {
   content: "";
   display: inline-block;
   height: 100%;
@@ -38,11 +38,11 @@
   transition: all 0.4s;
 }
 
-.btn::after {
+.clone-button::after {
   background-color: #fff;
 }
 
-.btn:hover::after {
+.clone-button:hover::after {
   transform: scaleX(1.4) scaleY(1.6);
   opacity: 0;
 }

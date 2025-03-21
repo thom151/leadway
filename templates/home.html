@@ -1,59 +1,7 @@
 {{ define "title" }}Home Page{{ end }}
-
+{{define "stylesheet"}}
+   
+{{end}}
 {{ define "content" }}
-<div class="grid-container">
-    {{ if .VoiceAssistants}}
-            {{ range.VoiceAssistants }}
-                <div class="card">
-                    <div class="bg">
-                         <h3 class="assistant-name"> {{ .Name }} </h3>
-                        <div class="assistant-info">
-                            <span>Total Calls: <strong>{{ .TotalCallsMade }}</strong></span>
-                            <span>Total Duration: <strong>{{ .TotalDuration }}</strong></span>
-                        </div>
-                        <button class="btn" id="card-btn" data-voice-id="{{ .ClonedVoiceID }}">Use</button>
-                    </div>
-                    <div class="blob"></div>
-                </div>
-            {{ end }}
-    {{ else }}
-        <p>No voice assistants yet</p>
-    {{ end }}
-</div>
 
-<audio id="audioPlayer" controls style="display: none;"></audio>
-<script>
-    document.querySelectorAll(".btn").forEach(button => {
-        button.addEventListener("click", async (event) => {
-            const voiceId = event.target.getAttribute("data-voice-id");
-            const audioPlayer = document.getElementById("audioPlayer");
-
-            try {
-                const response = await fetch("/api/speak", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({voice_id: voiceId, contact_id: "0413810844"})
-                })
-
-                if (!response.ok) {
-                    throw new Error ("failed to fetch audio stream");
-                }
-
-                const audioBlob = await response.blob();
-                const audioURL = URL.createObjectURL(audioBlob);
-
-                audioPlayer.src = audioURL;
-
-                audioPlayer.play().catch(error =>{
-                    console.error("Autoplay failed", error);
-                });
-            } catch (error) {
-                console.error("Error: ", error);
-            }
-            
-        })
-    })
-</script>
 {{ end }}
