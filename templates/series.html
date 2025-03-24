@@ -188,11 +188,11 @@
                     }
 
                     try {
-                        const response = await fetch("/api/video_series", {
+                        const response = await fetch("/api/video_series_generate", {
                             method: "POST",
                             "Content-Type": "application/json",
                             body: JSON.stringify(payload),
-                        });
+                        }); 
 
                         if (!response.ok) {
                            throw new Error ("network error: failed to create video series")

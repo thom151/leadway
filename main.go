@@ -149,11 +149,14 @@ func main() {
 	mux.HandleFunc("POST /api/refresh", apiCfg.handlerRefresh)
 	mux.HandleFunc("POST /api/revoke", apiCfg.handlerRevoke)
 
+	//UPLOAD TEMPLATES
 	mux.HandleFunc("POST /api/video_upload/{videoID}", apiCfg.handlerUploadVideo)
 	mux.HandleFunc("/api/videos", apiCfg.handlerVideoMetaCreate)
+
+	//SERIES
+	mux.HandleFunc("GET /api/series", apiCfg.handlerStartVideoSeries)
 	mux.HandleFunc("POST /api/video_series_meta", apiCfg.handlerVideoSeriesMetaCreate)
-	mux.HandleFunc("GET /api/video_series", apiCfg.handlerCreateVideoSeries)
-	mux.HandleFunc("POST /api/video_series", apiCfg.handlerUploadMp3ToS3)
+	mux.HandleFunc("POST /api/video_series_generate", apiCfg.handlerGenerateVideoSeries)
 	mux.HandleFunc("POST /api/create_client", apiCfg.handlerCreateClient)
 	mux.HandleFunc("GET /api/record", apiCfg.handlerRecordVideo)
 
