@@ -13,7 +13,7 @@
         </div>
         <div class="button-container">
             <button id="start-btn">Start Recording</button>
-            <button id="stop-btn">Stop Recording</button>
+            <button id="stop-btn" class="stop-btn">Stop Recording</button>
             <div class="close-btn" id="close-btn" aria-label="Close"><i class="bi bi-x-lg"></i></div>
         </div>
         <div id="teleprompter" class="teleprompter">
@@ -42,6 +42,7 @@
     let mediaRecorder;
     const videoWrapper = document.getElementById("video-wrapper");
     const videoElement = document.getElementById("record-video");
+    const stopBtn = document.getElementById("stop-btn");
 
     //teleprompter variables
     let scriptIndex = 0;
@@ -64,10 +65,12 @@
 
     function pageScroll() {
         teleprompterElement.scrollBy(0, 1); // Scroll down by 1 pixel
-        scrollDelay = setTimeout(pageScroll, 75); // Repeat every 10 milliseconds
+        scrollDelay = setTimeout(pageScroll, 60); // Repeat every 10 milliseconds
         // Stop scrolling if we reach the bottom
         if (teleprompterElement.scrollTop + teleprompterElement.clientHeight >= scriptTextElement.scrollHeight) {
             clearTimeout(scrollDelay);
+            stopBtn.style.display = "block";
+            teleprompterElement.style.display="none";
         }
     }
 
@@ -92,7 +95,7 @@
             mediaRecorder.ondataavailable = function (e) {
                 parts.push(e.data);
             };
-
+            teleprompterElement.style.display = "block";
             teleprompterElement.scrollTop = 0;
             pageScroll();
         };
@@ -103,6 +106,8 @@
         document.querySelector(".nav-bar-container").style.display = "flex";
         document.querySelector(".sidebar").style.display = "flex";
         // Revert video to original size
+        stopBtn.style.display = "none";
+
         videoWrapper.classList.remove("full-screen");
         videoElement.classList.remove("full-screen");
 

@@ -147,21 +147,45 @@ func getRunID(c *openai.Client, thread_id, assistant_id string) (string, error) 
 	return run.ID, nil
 }
 
-func getResponse(c *openai.Client, thread_id, run_id string) (string, error) {
+func getResponse(c *openai.Client, thread_id, run_id string) (openaiSmartResponse, error) {
+
+	var smartResp openaiSmartResponse
+
 	for {
 		run, err := c.RetrieveRun(context.Background(), thread_id, run_id)
 		if err != nil {
-			return "", err
+			return openaiSmartResponse{}, err
 		}
 
 		if run.Status == "completed" {
 			messagesList, err := c.ListMessage(context.Background(), thread_id, nil, nil, nil, nil, nil)
 			if err != nil {
-				return "", err
+				return openaiSmartResponse{}, err
 			}
 
-			message := messagesList.Messages[0].Content[0].Text.Value
-			return message, nil
+			var assistantMsg openai.Message
+			for _, msg := range messagesList.Messages {
+				if msg.Role == "assistant" {
+					assistantMsg = msg
+					break
+				}
+			}
+
+			if len(assistantMsg.Content) == 0 {
+				return openaiSmartResponse{}, fmt.Errorf("No assistant content")
+			}
+
+			if assistantMsg.Content[0].Type != "text" {
+				return openaiSmartResponse{}, fmt.Errorf("assistant message content is not text")
+			}
+
+			message := assistantMsg.Content[0].Text.Value
+
+			err = json.Unmarshal([]byte(message), &smartResp)
+			if err != nil {
+				return openaiSmartResponse{}, err
+			}
+			return smartResp, nil
 		}
 	}
 }

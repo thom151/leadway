@@ -55,6 +55,14 @@
     gap: 10px; /* Space between buttons */
 }
 
+.stop-btn {
+    display:none;
+    position:fixed;
+    z-index: 1001;
+    top:50%;
+    right:50%;
+}
+
 .close-btn{
     position:fixed;
     z-index: 1001;
@@ -84,6 +92,7 @@
     -webkit-overflow-scrolling: touch; /* Enable smooth scrolling on touch devices */
     scrollbar-width: none; /* Hide scrollbar for Firefox */
     -ms-overflow-style: none; /* Hid*/
+    display:none;
 }
 
 .teleprompter::-webkit-scrollbar {
