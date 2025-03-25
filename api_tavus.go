@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	//	"strings"
@@ -185,7 +186,7 @@ func (cfg *apiConfig) generateVideoAndGetId(aiResponse, replicaID string) (strin
 
 }
 
-func (cfg *apiConfig) downloadVideo(videoId, outputPath string) (string, error) {
+func (cfg *apiConfig) downloadVideo(videoId, userId, taskId string) (string, error) {
 	url := "https://tavusapi.com/v2/videos/" + videoId
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -257,8 +258,12 @@ func (cfg *apiConfig) downloadVideo(videoId, outputPath string) (string, error) 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("download failed with status %d", resp.StatusCode)
 	}
-
-	out, err := os.CreateTemp("temp", "video-*.mp4")
+	taskDir := filepath.Join("temp", userId, taskId)
+	if err := os.MkdirAll(taskDir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create task directory %s: %v", taskDir, err)
+	}
+	videoPath := filepath.Join(taskDir, "video.mp4")
+	out, err := os.Create(videoPath)
 	if err != nil {
 		return "", err
 	}
@@ -270,6 +275,6 @@ func (cfg *apiConfig) downloadVideo(videoId, outputPath string) (string, error) 
 		return "", err
 	}
 
-	return out.Name(), nil
+	return videoPath, nil
 
 }

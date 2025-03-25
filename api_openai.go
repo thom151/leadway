@@ -1,32 +1,11 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"log"
-	"net/http"
-	"strings"
-
 	"github.com/sashabaranov/go-openai"
 )
-
-type StreamEvent struct {
-	ID     string `json:"id"`
-	Object string `json:"object"`
-	Delta  struct {
-		Content []struct {
-			Index int    `json:"index"`
-			Type  string `json:"type"`
-			Text  struct {
-				Value string `json:"value"`
-			} `json:"text"`
-		} `json:"content"`
-	} `json:"delta"`
-}
 
 func genThread(c *openai.Client, agent_name string) (openai.Thread, error) {
 	ctx := context.Background()
@@ -46,78 +25,6 @@ func genThread(c *openai.Client, agent_name string) (openai.Thread, error) {
 	}
 
 	return thread, nil
-}
-
-func streamOpenAIResponse(cfg *apiConfig, threadID, clientMessage string, chunkChan chan<- string) (string, error) {
-	ctx := context.Background()
-	_, err := cfg.openaiClient.CreateMessage(ctx, threadID, openai.MessageRequest{
-		Role:    "user",
-		Content: clientMessage,
-	})
-
-	if err != nil {
-		return "", err
-	}
-
-	url := "https://api.openai.com/v1/threads/" + threadID + "/runs"
-	reqBody := map[string]interface{}{
-		"assistant_id": cfg.assistantID,
-		"stream":       true,
-	}
-
-	jsonBody, err := json.Marshal(reqBody)
-	if err != nil {
-		log.Printf("Create message failed: %v", err)
-		return "", err
-	}
-	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(jsonBody))
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Authorization", "Bearer "+cfg.openaiApiKey)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("OpenAI-Beta", "assistants=v2")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("unexpected status: %d - %s", resp.StatusCode, string(body))
-	}
-	log.Println(http.StatusOK)
-
-	var fullResponse strings.Builder
-	scanner := bufio.NewScanner(resp.Body)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.HasPrefix(line, "data: ") {
-			data := strings.TrimPrefix(line, "data: ")
-			if data == "[DONE]" {
-				break
-			}
-
-			var event StreamEvent
-			err := json.Unmarshal([]byte(data), &event)
-			if err != nil {
-				continue
-			}
-			if event.Object == "thread.message.delta" && len(event.Delta.Content) > 0 {
-				chunk := event.Delta.Content[0].Text.Value
-				fullResponse.WriteString(chunk)
-			}
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		log.Printf("Scanner error: %v", err)
-	}
-	close(chunkChan)
-	return fullResponse.String(), scanner.Err()
-
 }
 
 func sendMessage(c *openai.Client, thread_id, client_message string) error {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -14,119 +15,223 @@ import (
 	"time"
 )
 
-func (cfg *apiConfig) editAndUpload(video, broll, userId string, ts []float64) (string, error) {
-	outputFile := userId + "-edited.mp4"
+const (
+	videoCodec    = "libx264"
+	audioCodec    = "aac"
+	frameRate     = "30"
+	pixelFormat   = "yuv420p"
+	sampleRate    = "44100"
+	channelLayout = "stereo"
+)
 
-	if len(ts) != 2 || ts[0] >= ts[1] {
-		return "", fmt.Errorf("invalid timestamps: must have exactly two timestamps with ts[0] < ts[1]")
+type videoSeriesFormat struct {
+	VideoCodec    string
+	AudioCodec    string
+	FrameRate     string
+	PixelFormat   string
+	SampleRate    string
+	ChannelLayout string
+}
+
+func (cfg *apiConfig) edit(video, audio, broll, userId string, ts []float64) (string, error) {
+	var filesForCleanup []string
+
+	taskPath := filepath.Dir(video)
+	audioTaskPath := filepath.Dir(audio)
+	if taskPath != audioTaskPath {
+		return "", fmt.Errorf("video and audio file not in the same directory")
+	}
+	totalDuration, err := getTotalDuration(video)
+	if err != nil {
+		return "", err
 	}
 
-	var out, stderr bytes.Buffer
+	brollDuration := ts[1] - ts[0]
 
-	// Get total video duration
+	if ts[1] > totalDuration || ts[0] > ts[1] {
+		return "", fmt.Errorf("error with timestamps and durations")
+	}
+
+	videoFormat := videoSeriesFormat{
+		VideoCodec:    "libx264",
+		AudioCodec:    "aac",
+		FrameRate:     "30",
+		PixelFormat:   "yuv420p",
+		SampleRate:    "44100",
+		ChannelLayout: "stereo",
+	}
+
+	segment1 := filepath.Join(taskPath, "segment1.mp4")
+	segment2 := filepath.Join(taskPath, "segment2.mp4")
+	segment3 := filepath.Join(taskPath, "segment3.mp4")
+
+	err = cutAndSaveVideo(video, segment1, 0, ts[0], videoFormat)
+	if err != nil {
+		return "", err
+	}
+	log.Println("SEGMENT 1 SAVED ... \n")
+	err = cutAndSaveVideo(broll, segment2, 0, brollDuration, videoFormat, true)
+	if err != nil {
+		return "", err
+	}
+
+	log.Println("SEGMENT 2 SAVED ... \n")
+	err = cutAndSaveVideo(video, segment3, ts[1], totalDuration-ts[1], videoFormat)
+	if err != nil {
+		return "", err
+	}
+
+	log.Println("SEGMENT 3 SAVED ... \n")
+	filesForCleanup = append(filesForCleanup, segment1, segment2, segment3)
+
+	//put each segment in a file
+	concatTextFile := filepath.Join(taskPath, "concat.txt")
+	concatContent := strings.NewReader(fmt.Sprintf("file '%s'\nfile '%s'\nfile '%s'\n",
+		filepath.Base(segment1), filepath.Base(segment2), filepath.Base(segment3)))
+	f, err := os.Create(concatTextFile)
+	if err != nil {
+		return "", fmt.Errorf("failed to create concat.txt: %v", err)
+	}
+	defer f.Close()
+	_, err = io.Copy(f, concatContent)
+	if err != nil {
+		return "", fmt.Errorf("failed to write concat.txt: %v", err)
+	}
+	filesForCleanup = append(filesForCleanup, concatTextFile)
+
+	log.Println("CONCAT TEXT FILE SAVED ... \n")
+	// use ffmpeg to concatenate all three files
+	concatOutputPath, err := concatVideosFromTextFile(concatTextFile, taskPath, videoFormat)
+	if err != nil {
+		return "", err
+	}
+	filesForCleanup = append(filesForCleanup, concatOutputPath)
+
+	log.Println("CONCATENATED VIDEO SAVED ... \n")
+	//overlay audio
+	finalVideoOutputPath, err := overlayAudio(audio, concatOutputPath, taskPath, videoFormat)
+	if err != nil {
+		return "", err
+	}
+	log.Println("Final Video Saved ... \n")
+	err = cleanFiles(filesForCleanup)
+	if err != nil {
+		return "", err
+	}
+
+	return finalVideoOutputPath, nil
+}
+
+func cleanFiles(files []string) error {
+	var errs []string
+	for _, file := range files {
+		if err := os.Remove(file); err != nil {
+			errs = append(errs, fmt.Sprintf("failed to remove %s: %v", file, err))
+		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("cleanup errors: %s", strings.Join(errs, "; "))
+	}
+	return nil
+}
+
+func overlayAudio(audioPath, concatenatedPath, taskPath string, videoFormat videoSeriesFormat) (string, error) {
+	outputPath := filepath.Join(taskPath, "output.mp4")
+	cmd := exec.Command("ffmpeg",
+		"-i", concatenatedPath,
+		"-i", audioPath,
+		"-c:v", "copy",
+		"-c:a", videoFormat.AudioCodec,
+		"-ar", videoFormat.SampleRate,
+		"-channel_layout", videoFormat.ChannelLayout,
+		"-map", "0:v:0", "-map", "1:a:0",
+		outputPath,
+	)
+	var stderr bytes.Buffer
+	stderr.Reset()
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("failed to overlay audio: %v, stderr: %s", err, stderr.String())
+	}
+	return outputPath, nil
+}
+
+func concatVideosFromTextFile(textFile, taskPath string, videoFormat videoSeriesFormat) (string, error) {
+	concatOutput := filepath.Join(taskPath, "concat_video.mp4")
+	cmd := exec.Command("ffmpeg",
+		"-f", "concat",
+		"-safe", "0",
+		"-i", textFile,
+		"-c:v", videoFormat.VideoCodec,
+		"-preset", "fast",
+		"-an",
+		"-r", videoFormat.FrameRate,
+		"-pix_fmt", videoFormat.PixelFormat,
+		concatOutput,
+	)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return "", err
+
+	}
+	return concatOutput, nil
+}
+
+func getTotalDuration(video string) (float64, error) {
+	var out, stderr bytes.Buffer
 	cmd := exec.Command("ffprobe", "-v", "error", "-show_entries", "format=duration",
 		"-of", "default=noprint_wrappers=1:nokey=1", video)
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("failed to get video duration: %v, stderr: %s", err, stderr.String())
+		return 0, fmt.Errorf("failed to get video duration: %v, stderr: %s", err, stderr.String())
 	}
-	totalDuration, err := strconv.ParseFloat(strings.TrimSpace(out.String()), 64)
+	duration, err := strconv.ParseFloat(strings.TrimSpace(out.String()), 64)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse duration: %v", err)
+		return 0, fmt.Errorf("failed to parse duration: %v", err)
 	}
-	log.Println("Total Duration:", totalDuration)
+	return duration, nil
+}
 
-	// Paths
-	segment1 := filepath.Join("temp", "segment1.mp4")
-	segment2 := filepath.Join("temp", "segment2.mp4")
-	segment3 := filepath.Join("temp", "segment3.mp4")
-	audioFile := filepath.Join("temp", "full_audio.aac")
-	brollAudio := filepath.Join("temp", "broll_audio.aac")
-
-	// Segment 1: with fade out
-	fadeOutStart := ts[0] - 1
-	if fadeOutStart < 0 {
-		fadeOutStart = 0
+func cutAndSaveVideo(inputPath, outputPath string, startTime, duration float64, videoFormat videoSeriesFormat, muteAudio ...bool) error {
+	args := []string{
+		"-ss", fmt.Sprintf("%.2f", startTime),
+		"-i", inputPath,
+		"-t", fmt.Sprintf("%.2f", duration),
+		"-c:v", videoFormat.VideoCodec,
+		"-preset", "fast",
+		"-r", videoFormat.FrameRate,
+		"-pix_fmt", videoFormat.PixelFormat,
 	}
-	fadeOutFilter := fmt.Sprintf("fade=out:st=%.2f:d=1", fadeOutStart)
-	cmd = exec.Command("ffmpeg", "-ss", "0", "-i", video, "-t", fmt.Sprintf("%.2f", ts[0]),
-		"-vf", fadeOutFilter, "-c:v", "libx264", "-c:a", "aac", "-y", segment1)
-	stderr.Reset()
+
+	if len(muteAudio) == 0 || !muteAudio[0] {
+		args = append(args,
+			"-c:a", videoFormat.AudioCodec,
+			"-ar", videoFormat.SampleRate,
+			"-channel_layout", videoFormat.ChannelLayout,
+		)
+	} else {
+		args = append(args, "-an") // Mute audio
+	}
+
+	var stderr bytes.Buffer
+	args = append(args, "-f", "mp4", "-movflags", "faststart", outputPath)
+
+	cmd := exec.Command("ffmpeg", args...)
 	cmd.Stderr = &stderr
+
+	// Log the FFmpeg command for debugging
+	log.Printf("Running FFmpeg command: %v", cmd.Args)
+
 	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("failed to extract segment1: %v, stderr: %s", err, stderr.String())
+		return fmt.Errorf("failed to run FFmpeg: %v, stderr: %s", err, stderr.String())
 	}
-
-	// Extract full original audio
-	cmd = exec.Command("ffmpeg", "-y", "-i", video, "-vn", "-acodec", "copy", audioFile)
-	stderr.Reset()
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("failed to extract audio: %v, stderr: %s", err, stderr.String())
+	if _, err := os.Stat(outputPath); err != nil {
+		return fmt.Errorf("output file was not created: %v", err)
 	}
+	return nil
 
-	// Trim audio for b-roll (RE-ENCODED to avoid EOF issue)
-	brollDuration := ts[1] - ts[0]
-	cmd = exec.Command("ffmpeg", "-y", "-ss", fmt.Sprintf("%.2f", ts[0]), "-t", fmt.Sprintf("%.2f", brollDuration),
-		"-i", audioFile, "-c:a", "aac", brollAudio)
-	stderr.Reset()
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("failed to trim b-roll audio: %v, stderr: %s", err, stderr.String())
-	}
-
-	// Ensure audio was created and isn't empty
-	stat, err := os.Stat(brollAudio)
-	if err != nil || stat.Size() == 0 {
-		return "", fmt.Errorf("b-roll audio file is missing or empty after trimming")
-	}
-
-	// Segment 2: b-roll with fade-in and overlaid voice audio
-	cmd = exec.Command("ffmpeg", "-y", "-i", broll, "-i", brollAudio,
-		"-vf", "fade=in:st=0:d=1", "-c:v", "libx264", "-c:a", "aac",
-		"-map", "0:v:0", "-map", "1:a:0", segment2)
-	stderr.Reset()
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("failed to create segment2 with b-roll and audio: %v, stderr: %s", err, stderr.String())
-	}
-
-	// Segment 3: from ts[1] to end
-	cmd = exec.Command("ffmpeg", "-ss", fmt.Sprintf("%.2f", ts[1]), "-i", video,
-		"-c:v", "libx264", "-c:a", "aac", "-y", segment3)
-	stderr.Reset()
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("failed to extract segment3: %v, stderr: %s", err, stderr.String())
-	}
-
-	// Create concat list
-	concatList := filepath.Join("", "concat.txt")
-	f, err := os.Create(concatList)
-	if err != nil {
-		return "", fmt.Errorf("failed to create concat list: %v", err)
-	}
-	defer f.Close()
-
-	abs1, _ := filepath.Abs(segment1)
-	abs2, _ := filepath.Abs(segment2)
-	abs3, _ := filepath.Abs(segment3)
-	_, err = f.WriteString(fmt.Sprintf("file '%s'\nfile '%s'\nfile '%s'\n", abs1, abs2, abs3))
-	if err != nil {
-		return "", fmt.Errorf("failed to write concat list: %v", err)
-	}
-
-	// Final concatenation
-	cmd = exec.Command("ffmpeg", "-f", "concat", "-safe", "0", "-i", concatList, "-c", "copy", outputFile)
-	stderr.Reset()
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("failed to concatenate final video: %v, stderr: %s", err, stderr.String())
-	}
-
-	log.Println("Final video created at:", outputFile)
-	return outputFile, nil
 }
 
 func (cfg *apiConfig) getCutTimestamps(audio string, aiResp openaiSmartResponse) ([]float64, error) {
