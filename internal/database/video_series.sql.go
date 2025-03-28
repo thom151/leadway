@@ -18,7 +18,7 @@ VALUES(
     ?,
     ?,
     ?
-)RETURNING id, title, description, user_id, client_id, s3_url, created_at, updated_at
+)RETURNING id, title, description, user_id, client_id, s3_url, created_at, updated_at, audio_s3
 `
 
 type CreateVideoSeriesMetaParams struct {
@@ -47,12 +47,13 @@ func (q *Queries) CreateVideoSeriesMeta(ctx context.Context, arg CreateVideoSeri
 		&i.S3Url,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AudioS3,
 	)
 	return i, err
 }
 
 const getVideoSeriesById = `-- name: GetVideoSeriesById :one
-SELECT id, title, description, user_id, client_id, s3_url, created_at, updated_at FROM video_series WHERE id = ?
+SELECT id, title, description, user_id, client_id, s3_url, created_at, updated_at, audio_s3 FROM video_series WHERE id = ?
 `
 
 func (q *Queries) GetVideoSeriesById(ctx context.Context, id string) (VideoSeries, error) {
@@ -67,6 +68,7 @@ func (q *Queries) GetVideoSeriesById(ctx context.Context, id string) (VideoSerie
 		&i.S3Url,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AudioS3,
 	)
 	return i, err
 }
@@ -104,6 +106,34 @@ func (q *Queries) GetVideosSeriesByUserAndClient(ctx context.Context, userID str
 		return nil, err
 	}
 	return items, nil
+}
+
+const setAudioUrl = `-- name: SetAudioUrl :one
+UPDATE video_series SET audio_s3 = ?
+WHERE id = ?
+RETURNING id, title, description, user_id, client_id, s3_url, created_at, updated_at, audio_s3
+`
+
+type SetAudioUrlParams struct {
+	AudioS3 string
+	ID      string
+}
+
+func (q *Queries) SetAudioUrl(ctx context.Context, arg SetAudioUrlParams) (VideoSeries, error) {
+	row := q.db.QueryRowContext(ctx, setAudioUrl, arg.AudioS3, arg.ID)
+	var i VideoSeries
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Description,
+		&i.UserID,
+		&i.ClientID,
+		&i.S3Url,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.AudioS3,
+	)
+	return i, err
 }
 
 const updateVideoSeries = `-- name: UpdateVideoSeries :exec

@@ -49,6 +49,18 @@ type User struct {
 	AvatarID     string
 }
 
+type VideoAvatar struct {
+	ID           string
+	TemplateType string
+	AvatarID     string
+	Title        string
+	Description  sql.NullString
+	UserID       string
+	S3Url        sql.NullString
+	CreatedAt    sql.NullTime
+	UpdatedAt    sql.NullTime
+}
+
 type VideoSeries struct {
 	ID          string
 	Title       string
@@ -58,6 +70,7 @@ type VideoSeries struct {
 	S3Url       sql.NullString
 	CreatedAt   sql.NullTime
 	UpdatedAt   sql.NullTime
+	AudioS3     string
 }
 
 type VideoTemplate struct {

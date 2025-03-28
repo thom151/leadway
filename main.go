@@ -31,6 +31,7 @@ type apiConfig struct {
 	openaiApiKey   string
 	assistantID    string
 	deepgramApiKey string
+	heygenApiKey   string
 	s3Bucket       string
 	s3Region       string
 	s3CfDistro     string
@@ -84,6 +85,11 @@ func main() {
 		log.Fatal("deepgram api key not set")
 	}
 
+	heygenApiKey := os.Getenv("HEYGEN_API_KEY")
+	if heygenApiKey == "" {
+		log.Fatal("heygain api key not set")
+	}
+
 	s3Bucket := os.Getenv("S3_BUCKET")
 	if s3Bucket == "" {
 		log.Fatal("s3 bucket not provided")
@@ -132,6 +138,7 @@ func main() {
 		openaiApiKey:   openaiApiKey,
 		deepgramApiKey: deepgramApiKey,
 		tavusApiKey:    tavusApiKey,
+		heygenApiKey:   heygenApiKey,
 	}
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
@@ -156,9 +163,12 @@ func main() {
 	//SERIES
 	mux.HandleFunc("GET /api/series", apiCfg.handlerStartVideoSeries)
 	mux.HandleFunc("POST /api/video_series_meta", apiCfg.handlerVideoSeriesMetaCreate)
-	mux.HandleFunc("POST /api/video_series_generate", apiCfg.handlerGenerateVideoSeries)
+	mux.HandleFunc("POST /api/video_series_generate", apiCfg.handlerGenerateVideoSeriesUsingHeygen)
 	mux.HandleFunc("POST /api/create_client", apiCfg.handlerCreateClient)
 	mux.HandleFunc("GET /api/record", apiCfg.handlerRecordVideo)
+
+	//AVATARS
+	mux.HandleFunc("GET /api/avatars", apiCfg.handlerGetAvatars)
 
 	srv := &http.Server{
 		Addr:    ":" + port,

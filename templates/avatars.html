@@ -1,0 +1,12 @@
+{{ define "title" }}Home Page{{ end }}
+{{define "stylesheet"}}
+   
+{{end}}
+{{ define "content" }}
+{{if .Data.AvatarList}}
+        {{range .Data.AvatarList}}
+            <video class="video-player" value="{{.AvatarID}}" controls style="display: block;" src="{{.PreviewVideoURL}}"></video>
+            <button value="{{.AvatarID}}" class="select-video-button">Select Video</button>
+        {{end}}
+    {{end}}
+{{ end }}

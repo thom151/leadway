@@ -11,6 +11,10 @@ VALUES(
 -- name: GetVideoSeriesById :one
 SELECT * FROM video_series WHERE id = ?;
 
+-- name: SetAudioUrl :one
+UPDATE video_series SET audio_s3 = ?
+WHERE id = ?
+RETURNING *;
 
 -- name: UpdateVideoSeries :exec
 UPDATE video_series 
