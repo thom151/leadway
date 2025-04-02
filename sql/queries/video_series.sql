@@ -1,7 +1,6 @@
 -- name: CreateVideoSeriesMeta :one
-INSERT INTO video_series (id, user_id, client_id, title, description )
+INSERT INTO video_series (id, user_id, title, description )
 VALUES(
-    ?,
     ?,
     ?,
     ?,
@@ -22,7 +21,6 @@ SET
     title = ?,
     description = ?,
     user_id = ?,
-    client_id = ?,
     s3_url = ?
 WHERE id = ?;
 

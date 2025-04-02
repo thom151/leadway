@@ -206,7 +206,7 @@ func (cfg *apiConfig) getVideoStatus(videoID string) (string, error) {
 		switch statusResp.Data.Status {
 		case "completed":
 			return statusResp.Data.VideoURL, nil
-		case "pending", "processing":
+		case "pending", "processing", "waiting":
 			fmt.Printf("Video %s status: %s, checking again in 5 seconds...\n", videoID, statusResp.Data.Status)
 			time.Sleep(5 * time.Second)
 		case "failed":
@@ -214,6 +214,8 @@ func (cfg *apiConfig) getVideoStatus(videoID string) (string, error) {
 		default:
 			return "", fmt.Errorf("unknown status: %s", statusResp.Data.Status)
 		}
+
+		log.Println("Status: ", statusResp.Data.Status)
 	}
 }
 

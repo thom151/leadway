@@ -18,11 +18,12 @@ func (cfg *apiConfig) handlerVideoSeriesMetaCreate(w http.ResponseWriter, r *htt
 	}
 
 	type params struct {
-		Title        string `json:"title"`
-		Personalized string `json:"personalize"`
-		ClientID     string `json:"client_id"`
-		UserID       string `json:"user_id"`
-		VideoID      string `json:"video_id"`
+		Title         string `json:"title"`
+		Personalized  string `json:"personalize"`
+		ClientName    string `json:"client_name"`
+		ClientAddress string `json:"client_address"`
+		UserID        string `json:"user_id"`
+		TemplateID    string `json:"template_id"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -33,13 +34,7 @@ func (cfg *apiConfig) handlerVideoSeriesMetaCreate(w http.ResponseWriter, r *htt
 		return
 	}
 
-	client, err := cfg.db.GetClientById(r.Context(), parameters.ClientID)
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "error getting client", err.Error())
-		return
-	}
-
-	videoTemplate, err := cfg.db.GetVideoById(r.Context(), parameters.VideoID)
+	template, err := cfg.db.GetVideoById(r.Context(), parameters.TemplateID)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "error getting video template", err.Error())
 		return
@@ -50,12 +45,9 @@ func (cfg *apiConfig) handlerVideoSeriesMetaCreate(w http.ResponseWriter, r *htt
 	videoSeriesMeta, err := cfg.db.CreateVideoSeriesMeta(r.Context(), database.CreateVideoSeriesMetaParams{
 		ID:          uuid.New().String(),
 		UserID:      user.ID,
-		ClientID:    parameters.ClientID,
 		Title:       parameters.Title,
 		Description: sql.NullString{String: parameters.Personalized, Valid: parameters.Personalized != ""},
 	})
-
-	log.Println("made: ", videoSeriesMeta.Description.String)
 
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "error creating video series meta", err.Error())
@@ -64,14 +56,16 @@ func (cfg *apiConfig) handlerVideoSeriesMetaCreate(w http.ResponseWriter, r *htt
 
 	type response struct {
 		VideoSeriesMeta database.VideoSeries
-		VideoTemplateID string
-		ClientDetails   database.Client
+		TemplateID      string
+		ClientName      string
+		ClientAddress   string
 	}
 
 	resp := response{
 		VideoSeriesMeta: videoSeriesMeta,
-		VideoTemplateID: videoTemplate.ID,
-		ClientDetails:   client,
+		TemplateID:      template.ID,
+		ClientName:      parameters.ClientName,
+		ClientAddress:   parameters.ClientAddress,
 	}
 
 	respondWithJSON(w, http.StatusOK, resp)

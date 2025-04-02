@@ -33,7 +33,7 @@ type videoSeriesFormat struct {
 	ChannelLayout string
 }
 
-func (cfg *apiConfig) edit(video, audio, broll, userId string, ts []float64) (string, error) {
+func (cfg *apiConfig) edit(video, audio, broll, music, userId string, ts []float64) (string, error) {
 	var filesForCleanup []string
 
 	taskPath := filepath.Dir(video)
@@ -64,25 +64,33 @@ func (cfg *apiConfig) edit(video, audio, broll, userId string, ts []float64) (st
 	segment1 := filepath.Join(taskPath, "segment1.mp4")
 	segment2 := filepath.Join(taskPath, "segment2.mp4")
 	segment3 := filepath.Join(taskPath, "segment3.mp4")
+	musicOut := filepath.Join(taskPath, "music.mp4")
 
 	err = cutAndSaveVideo(video, segment1, 0, ts[0], videoFormat)
 	if err != nil {
 		return "", err
 	}
 	log.Println("SEGMENT 1 SAVED ... \n")
+
 	err = cutAndSaveVideo(broll, segment2, 0, brollDuration, videoFormat, true)
 	if err != nil {
 		return "", err
 	}
-
 	log.Println("SEGMENT 2 SAVED ... \n")
+
 	err = cutAndSaveVideo(video, segment3, ts[1], totalDuration-ts[1], videoFormat)
 	if err != nil {
 		return "", err
 	}
-
 	log.Println("SEGMENT 3 SAVED ... \n")
-	filesForCleanup = append(filesForCleanup, segment1, segment2, segment3)
+
+	err = cutAndSaveAudio(music, musicOut, totalDuration, videoFormat)
+	if err != nil {
+		return "", err
+	}
+	log.Println("MUSIC SAVED ... \n")
+
+	filesForCleanup = append(filesForCleanup, segment1, segment2, segment3, musicOut)
 
 	//put each segment in a file
 	concatTextFile := filepath.Join(taskPath, "concat.txt")
@@ -109,7 +117,7 @@ func (cfg *apiConfig) edit(video, audio, broll, userId string, ts []float64) (st
 
 	log.Println("CONCATENATED VIDEO SAVED ... \n")
 	//overlay audio
-	finalVideoOutputPath, err := overlayAudio(audio, concatOutputPath, taskPath, videoFormat)
+	finalVideoOutputPath, err := overlayAudio(audio, musicOut, concatOutputPath, taskPath, videoFormat)
 	if err != nil {
 		return "", err
 	}
@@ -135,20 +143,24 @@ func cleanFiles(files []string) error {
 	return nil
 }
 
-func overlayAudio(audioPath, concatenatedPath, taskPath string, videoFormat videoSeriesFormat) (string, error) {
+func overlayAudio(audioPath, musicPath, concatenatedPath, taskPath string, videoFormat videoSeriesFormat) (string, error) {
 	outputPath := filepath.Join(taskPath, "output.mp4")
 	cmd := exec.Command("ffmpeg",
 		"-i", concatenatedPath,
 		"-i", audioPath,
+		"-i", musicPath,
+		"-filter_complex",
+		"[1:a]volume=1.5[a1];[2:a]volume=0.3[a2];[a1][a2]amix=inputs=2:duration=first:dropout_transition=0[a]",
+		"-map", "0:v:0",
+		"-map", "[a]",
 		"-c:v", "copy",
 		"-c:a", videoFormat.AudioCodec,
 		"-ar", videoFormat.SampleRate,
 		"-channel_layout", videoFormat.ChannelLayout,
-		"-map", "0:v:0", "-map", "1:a:0",
+		"-movflags", "faststart",
 		outputPath,
 	)
 	var stderr bytes.Buffer
-	stderr.Reset()
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
 		return "", fmt.Errorf("failed to overlay audio: %v, stderr: %s", err, stderr.String())
@@ -176,6 +188,49 @@ func concatVideosFromTextFile(textFile, taskPath string, videoFormat videoSeries
 
 	}
 	return concatOutput, nil
+}
+
+func cutAndSaveAudio(audioPath, outputPath string, duration float64, videoFormat videoSeriesFormat) error {
+	totalDuration, err := getTotalDuration(audioPath)
+	if err != nil {
+		return err
+	}
+
+	if totalDuration < duration {
+		return fmt.Errorf("requested duration exceeds music duration")
+	}
+
+	fadeDuration := 2.0
+	fadeStart := duration - fadeDuration
+	args := []string{
+		"-i", audioPath,
+		"-t", fmt.Sprintf("%.2f", duration), // Duration to cut
+		"-af", fmt.Sprintf("afade=t=out:st=%.2f:d=%.2f", fadeStart, fadeDuration), // Fade-out filter
+		"-c:a", videoFormat.AudioCodec,
+		"-ar", videoFormat.SampleRate,
+		"-channel_layout", videoFormat.ChannelLayout,
+		outputPath,
+	}
+	cmd := exec.Command("ffmpeg", args...)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	log.Printf("Running FFmpeg command: %v", cmd.Args)
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to cut audio: %v, stderr: %s", err, stderr.String())
+	}
+
+	if _, err := os.Stat(outputPath); err != nil {
+		return fmt.Errorf("output audio file was not created: %v", err)
+	}
+	outputDuration, err := getTotalDuration(outputPath)
+	if err != nil {
+		return fmt.Errorf("output audio file %s is not playable: %v", outputPath, err)
+	}
+	log.Printf("Output audio file %s created with duration %.2f seconds", outputPath, outputDuration)
+
+	return nil
 }
 
 func getTotalDuration(video string) (float64, error) {

@@ -66,11 +66,10 @@ type VideoSeries struct {
 	Title       string
 	Description sql.NullString
 	UserID      string
-	ClientID    string
 	S3Url       sql.NullString
+	AudioS3     string
 	CreatedAt   sql.NullTime
 	UpdatedAt   sql.NullTime
-	AudioS3     string
 }
 
 type VideoTemplate struct {

@@ -255,7 +255,7 @@ func (cfg *apiConfig) handlerGenerateVideoSeries(w http.ResponseWriter, r *http.
 		respondWithError(w, http.StatusInternalServerError, "error downloading video template", err.Error())
 		return
 	}
-	outputFile, err := cfg.edit(videoPath, audioPath, templatePath, user.ID, timestamps)
+	outputFile, err := cfg.edit(videoPath, audioPath, templatePath, "", user.ID, timestamps)
 
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "error editing the video", err.Error())

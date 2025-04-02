@@ -161,9 +161,9 @@ func main() {
 	mux.HandleFunc("/api/videos", apiCfg.handlerVideoMetaCreate)
 
 	//SERIES
-	mux.HandleFunc("GET /api/series", apiCfg.handlerStartVideoSeries)
+	mux.HandleFunc("GET /api/series/{avatarID}", apiCfg.handlerStartVideoSeries)
 	mux.HandleFunc("POST /api/video_series_meta/{avatarID}", apiCfg.handlerVideoSeriesMetaCreate)
-	mux.HandleFunc("POST /api/video_series_generate", apiCfg.handlerGenerateVideoSeriesUsingHeygen)
+	mux.HandleFunc("POST /api/video_series_generate/{avatarID}", apiCfg.handlerGenerateVideo)
 	mux.HandleFunc("POST /api/create_client", apiCfg.handlerCreateClient)
 	mux.HandleFunc("GET /api/record", apiCfg.handlerRecordVideo)
 

@@ -15,6 +15,14 @@ import (
 	"github.com/thom151/leadme/internal/database"
 )
 
+type genVideoFastParams struct {
+	VideoID       string `json:"video_id"`
+	ClientName    string `json:"client_name"`
+	ClientAddress string `json:"client_address"`
+	Personalized  string `json:"personalized"`
+	SeriesID      string `json:"series_id"`
+}
+
 func (cfg *apiConfig) handlerGenerateVideo(w http.ResponseWriter, r *http.Request) {
 	taskID := uuid.New().String()
 	avatarID := r.PathValue("avatarID")
@@ -29,12 +37,14 @@ func (cfg *apiConfig) handlerGenerateVideo(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	decoder := json.NewDecoder(r.Body)
-	var params genVideoParams
+	var params genVideoFastParams
 	err = decoder.Decode(&params)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "cannot decode parameters", err.Error())
 		return
 	}
+
+	log.Println("VIDEO ID!!!!!", params.VideoID)
 	video, err := cfg.db.GetVideoById(r.Context(), params.VideoID)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "error getting video", err.Error())
@@ -65,7 +75,7 @@ func (cfg *apiConfig) handlerGenerateVideo(w http.ResponseWriter, r *http.Reques
 	}
 	log.Println("Got Thread \n")
 
-	transcript_details := fmt.Sprintf("Agent Name: %s, Client name: %s, Client Address: %s, Other Details: %s", user.Username, client.Name, client.Address.String, series.Description.String)
+	transcript_details := fmt.Sprintf("Agent Name: %s, Client name: %s, Client Address: %s, Other Details: %s", user.Username, params.ClientName, params.ClientAddress, series.Description.String)
 	fmt.Println("Transcript details: ", transcript_details)
 
 	err = sendMessage(cfg.openaiClient, thread.ThreadID, transcript_details)
@@ -108,7 +118,7 @@ func (cfg *apiConfig) handlerGenerateVideo(w http.ResponseWriter, r *http.Reques
 		respondWithError(w, http.StatusInternalServerError, "error getting path", err.Error())
 		return
 	}
-	key = filepath.Join(user.ID, client.ID, "audio", key)
+	key = filepath.Join(user.ID, "test", "audio", key)
 
 	processedFile, err := os.Open(audioFile)
 	if err != nil {
@@ -131,7 +141,7 @@ func (cfg *apiConfig) handlerGenerateVideo(w http.ResponseWriter, r *http.Reques
 	}
 
 	url := fmt.Sprintf("%s,%s", cfg.s3Bucket, key)
-	_, err = cfg.db.SetAudioUrl(r.Context(), database.SetAudioUrlParams{
+	series, err = cfg.db.SetAudioUrl(r.Context(), database.SetAudioUrlParams{
 		AudioS3: url,
 		ID:      series.ID,
 	})
@@ -194,7 +204,9 @@ func (cfg *apiConfig) handlerGenerateVideo(w http.ResponseWriter, r *http.Reques
 		respondWithError(w, http.StatusInternalServerError, "error downloading video template", err.Error())
 		return
 	}
-	outputFile, err := cfg.edit(videoPath, audioPath, templatePath, user.ID, timestamps)
+
+	musicPath := filepath.Join("assets", "prelist", "prelist.mp3")
+	outputFile, err := cfg.edit(videoPath, audioPath, templatePath, musicPath, user.ID, timestamps)
 
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "error editing the video", err.Error())

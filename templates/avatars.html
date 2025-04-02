@@ -6,7 +6,11 @@
 {{if .Data.AvatarList}}
         {{range .Data.AvatarList}}
             <video class="video-player" value="{{.AvatarID}}" controls style="display: block;" src="{{.PreviewVideoURL}}"></video>
-            <button value="{{.AvatarID}}" class="select-video-button">Select Video</button>
+            <a href="/api/series/{{.AvatarID}}" class="select-avatar-button">Select Video</a>
         {{end}}
-    {{end}}
+{{ else }}
+    <p>No avatars availabe. Please try again later.</p>
+{{end}}
+
+   
 {{ end }}
