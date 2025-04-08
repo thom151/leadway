@@ -93,8 +93,8 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 			Expires:  time.Now().Add(24 * time.Hour),
 		})
 
-		http.Redirect(w, r, "/app", http.StatusSeeOther)
-		return
+		//http.Redirect(w, r, "/app", http.StatusSeeOther)
+		//return
 
 		respondWithJSON(w, http.StatusOK, response{
 			User: User{
