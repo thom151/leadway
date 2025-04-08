@@ -9,7 +9,7 @@ import (
 
 func (cfg *apiConfig) handlerGenerateVideoFromTemaplate(w http.ResponseWriter, r *http.Request) {
 
-	templateId := "32344687bfdb423a954bb9a115039697"
+	templateId := "323446"
 	url := "https://api.heygen.com/v2/template/" + templateId + "/generate"
 
 	payload := strings.NewReader("{\"caption\":false,\"callback_id\":\"<callback_id>\",\"title\":\"Untitled Video\",\"dimension\":{\"width\":1280,\"height\":720},\"include_gif\":false,\"enable_sharing\":false}")
