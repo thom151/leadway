@@ -7,6 +7,16 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
+type CutWord struct {
+	Word  string `json:"word"`
+	Index int    `json:"index"`
+}
+
+type openaiSmartResponse struct {
+	FullScript string    `json:"full_script"`
+	CutWords   []CutWord `json:"cut_words"`
+}
+
 func genThread(c *openai.Client, agent_name string) (openai.Thread, error) {
 	ctx := context.Background()
 

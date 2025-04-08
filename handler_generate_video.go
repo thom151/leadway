@@ -1,12 +1,14 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -73,7 +75,7 @@ func (cfg *apiConfig) handlerGenerateVideo(w http.ResponseWriter, r *http.Reques
 			ThreadID:  threadID.ID,
 		})
 	}
-	log.Println("Got Thread \n")
+	log.Println("Got Thread")
 
 	transcript_details := fmt.Sprintf("Agent Name: %s, Client name: %s, Client Address: %s, Other Details: %s", user.Username, params.ClientName, params.ClientAddress, series.Description.String)
 	fmt.Println("Transcript details: ", transcript_details)
@@ -101,15 +103,15 @@ func (cfg *apiConfig) handlerGenerateVideo(w http.ResponseWriter, r *http.Reques
 		respondWithError(w, http.StatusInternalServerError, "error generating audio", err.Error())
 		return
 	}
-	log.Println("generated audio successfuly\n")
+	log.Println("generated audio successful")
+
 	audioFile := fmt.Sprintf("audio_%s.mp3", uuid.New().String())
 	err = os.WriteFile(audioFile, audioBytes, 0644)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "error saving audio file", err.Error())
 		return
 	}
-
-	log.Println("audio file successfully saved\n")
+	log.Println("audio file successfully saved")
 
 	defer os.Remove(audioFile)
 
@@ -158,14 +160,16 @@ func (cfg *apiConfig) handlerGenerateVideo(w http.ResponseWriter, r *http.Reques
 	time.Sleep(10 * time.Second)
 	log.Println(series.AudioS3)
 
-	log.Println("generating video... \n\n")
+	log.Println("generating video...")
+
 	videoID, err := cfg.generateVideoHeygen(avatarID, series)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "error generating video", err.Error())
 		return
 	}
 	log.Println("Video ID: ", videoID)
-	log.Println("downloading video... \n\n")
+
+	log.Println("downloading video... ")
 
 	heyUrl, err := cfg.getVideoStatus(videoID)
 	if err != nil {
@@ -216,5 +220,43 @@ func (cfg *apiConfig) handlerGenerateVideo(w http.ResponseWriter, r *http.Reques
 	log.Println("Successfully edited: ", outputFile)
 
 	respondWithJSON(w, http.StatusOK, "ok")
+
+}
+
+func (cfg *apiConfig) dbVideoSeriesToSignedVideoSeries(series database.VideoSeries) (database.VideoSeries, error) {
+	if series.S3Url.String == "" {
+		return series, nil
+	}
+	parts := strings.Split(series.S3Url.String, ",")
+	if len(parts) < 2 {
+		return series, nil
+	}
+	bucket := parts[0]
+	key := parts[1]
+	presigned, err := generatePresignedURL(cfg.s3Client, bucket, key, 5*time.Minute)
+	if err != nil {
+		return series, err
+	}
+	series.S3Url = sql.NullString{String: presigned, Valid: presigned != ""}
+	return series, nil
+
+}
+
+func (cfg *apiConfig) dbAudioToSignedAudio(series database.VideoSeries) (database.VideoSeries, error) {
+	if series.AudioS3 == "unset" {
+		return series, nil
+	}
+	parts := strings.Split(series.AudioS3, ",")
+	if len(parts) < 2 {
+		return series, nil
+	}
+	bucket := parts[0]
+	key := parts[1]
+	presigned, err := generatePresignedURL(cfg.s3Client, bucket, key, 5*time.Minute)
+	if err != nil {
+		return series, err
+	}
+	series.AudioS3 = presigned
+	return series, nil
 
 }

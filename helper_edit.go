@@ -70,26 +70,22 @@ func (cfg *apiConfig) edit(video, audio, broll, music, userId string, ts []float
 	if err != nil {
 		return "", err
 	}
-	log.Println("SEGMENT 1 SAVED ... \n")
-
+	log.Println("SEGMENT 1 SAVED ... ")
 	err = cutAndSaveVideo(broll, segment2, 0, brollDuration, videoFormat, true)
 	if err != nil {
 		return "", err
 	}
-	log.Println("SEGMENT 2 SAVED ... \n")
-
+	log.Println("SEGMENT 2 SAVED ... ")
 	err = cutAndSaveVideo(video, segment3, ts[1], totalDuration-ts[1], videoFormat)
 	if err != nil {
 		return "", err
 	}
-	log.Println("SEGMENT 3 SAVED ... \n")
-
+	log.Println("SEGMENT 3 SAVED ... ")
 	err = cutAndSaveAudio(music, musicOut, totalDuration, videoFormat)
 	if err != nil {
 		return "", err
 	}
-	log.Println("MUSIC SAVED ... \n")
-
+	log.Println("MUSIC SAVED ... ")
 	filesForCleanup = append(filesForCleanup, segment1, segment2, segment3, musicOut)
 
 	//put each segment in a file
@@ -106,22 +102,20 @@ func (cfg *apiConfig) edit(video, audio, broll, music, userId string, ts []float
 		return "", fmt.Errorf("failed to write concat.txt: %v", err)
 	}
 	filesForCleanup = append(filesForCleanup, concatTextFile)
-
-	log.Println("CONCAT TEXT FILE SAVED ... \n")
+	log.Println("CONCAT TEXT FILE SAVED ... ")
 	// use ffmpeg to concatenate all three files
 	concatOutputPath, err := concatVideosFromTextFile(concatTextFile, taskPath, videoFormat)
 	if err != nil {
 		return "", err
 	}
 	filesForCleanup = append(filesForCleanup, concatOutputPath)
-
-	log.Println("CONCATENATED VIDEO SAVED ... \n")
+	log.Println("CONCATENATED VIDEO SAVED ...")
 	//overlay audio
 	finalVideoOutputPath, err := overlayAudio(audio, musicOut, concatOutputPath, taskPath, videoFormat)
 	if err != nil {
 		return "", err
 	}
-	log.Println("Final Video Saved ... \n")
+	log.Println("Final Video Saved ...")
 	err = cleanFiles(filesForCleanup)
 	if err != nil {
 		return "", err

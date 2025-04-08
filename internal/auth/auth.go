@@ -68,7 +68,7 @@ func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
 		return uuid.Nil, fmt.Errorf("invalid user id: %v", err)
 	}
 
-	return id, nil
+	return id, fmt.Errorf("just testing")
 }
 
 func GetBearerToken(headers http.Header, cookies []*http.Cookie) (string, error) {
