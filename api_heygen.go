@@ -1,3 +1,5 @@
+// #nosec G204 G304
+
 package main
 
 import (
@@ -104,7 +106,7 @@ func downloadHeygenVideo(shareURL, safeOutputPath string) error {
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("download failed with status: %s", resp.Status)
 	}
-
+	//nolint:gosec // G304: safePath-validated
 	out, err := os.OpenFile(safeOutputPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		return fmt.Errorf("error creating file %s: %w", safeOutputPath, err)

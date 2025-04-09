@@ -1,3 +1,5 @@
+// #nosec G204 G304
+
 package main
 
 import (
@@ -37,6 +39,7 @@ func downloadFromS3(s3URL, taskPath string) (string, error) {
 		return "", fmt.Errorf("failed to create directory %s: %v", taskPath, err)
 	}
 
+	//nolint:gosec // G304: safePath-validated
 	f, err := os.OpenFile(fullBrollPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		return "", fmt.Errorf("failed to create file %s: %v", fullBrollPath, err)

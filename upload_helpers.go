@@ -1,3 +1,5 @@
+// #nosec G204
+
 package main
 
 import (

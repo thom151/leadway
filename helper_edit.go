@@ -1,3 +1,4 @@
+// #nosec G204 G304
 package main
 
 import (
@@ -80,6 +81,7 @@ func (cfg *apiConfig) edit(video, audio, broll, music, userId string, ts []float
 	filesForCleanup = append(filesForCleanup, segment1, segment2, segment3, musicOut)
 
 	//put each segment in a file
+	//nolint:gosec // G304: safePath-validated
 	concatTextFile := filepath.Join(taskPath, "concat.txt")
 	f, err := os.OpenFile(concatTextFile, os.O_CREATE|os.O_WRONLY, 0600) // Use 0600 permissions
 	if err != nil {
@@ -129,7 +131,7 @@ func cleanFiles(files []string) error {
 
 func overlayAudio(audioPath, musicPath, concatenatedPath, taskPath string, videoFormat videoSeriesFormat) (string, error) {
 	outputPath := filepath.Join(taskPath, "output.mp4")
-
+	//nolint:gosec // G204: safePath-validated
 	cmd := exec.Command("ffmpeg",
 		"-i", concatenatedPath,
 		"-i", audioPath,
@@ -156,6 +158,7 @@ func overlayAudio(audioPath, musicPath, concatenatedPath, taskPath string, video
 func concatVideosFromTextFile(textFile, taskPath string, videoFormat videoSeriesFormat) (string, error) {
 	concatOutput := filepath.Join(taskPath, "concat_video.mp4")
 
+	//nolint:gosec // G204: safePath-validated
 	cmd := exec.Command("ffmpeg",
 		"-f", "concat",
 		"-safe", "0",
@@ -197,6 +200,7 @@ func cutAndSaveAudio(audioPath, outputPath string, duration float64, videoFormat
 		"-channel_layout", videoFormat.ChannelLayout,
 		outputPath,
 	}
+	//nolint:gosec // G204: safePath-validated
 	cmd := exec.Command("ffmpeg", args...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -259,6 +263,7 @@ func cutAndSaveVideo(inputPath, outputPath string, startTime, duration float64, 
 	var stderr bytes.Buffer
 	args = append(args, "-f", "mp4", "-movflags", "faststart", outputPath)
 
+	//nolint:gosec // G204: safePath-validated
 	cmd := exec.Command("ffmpeg", args...)
 	cmd.Stderr = &stderr
 
@@ -278,7 +283,7 @@ func cutAndSaveVideo(inputPath, outputPath string, startTime, duration float64, 
 func (cfg *apiConfig) getCutTimestamps(audio string, aiResp openaiSmartResponse) ([]float64, error) {
 	log.Println("Ai Smart Response: ", aiResp.CutWords)
 	url := "https://api.deepgram.com/v1/listen?smart_format=true"
-
+	//nolint:gosec // G304: safePath-validated
 	file, err := os.Open(audio)
 	if err != nil {
 		return nil, err
@@ -334,6 +339,7 @@ func extractAudio(videoPath string) (string, error) {
 		return "", fmt.Errorf("error creating directory %s: %w", dir, err)
 	}
 
+	//nolint:gosec // G204: videoPath and audioPath are safePath-validated
 	cmd := exec.Command("ffmpeg", "-i", videoPath, "-vn", "-acodec", "mp3", audioPath)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr

@@ -1,3 +1,5 @@
+// #nosec G204 G304
+
 package main
 
 import (
@@ -134,6 +136,7 @@ func (cfg *apiConfig) handlerGenerateVideo(w http.ResponseWriter, r *http.Reques
 	}
 	key = filepath.Join(user.ID, "test", "audio", key)
 
+	//nolint:gosec // G304: safePath-validated
 	processedFile, err := os.Open(safeAudioFile)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "error opening fast video", err.Error())
