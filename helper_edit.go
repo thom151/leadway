@@ -15,15 +15,6 @@ import (
 	"time"
 )
 
-const (
-	videoCodec    = "libx264"
-	audioCodec    = "aac"
-	frameRate     = "30"
-	pixelFormat   = "yuv420p"
-	sampleRate    = "44100"
-	channelLayout = "stereo"
-)
-
 type videoSeriesFormat struct {
 	VideoCodec    string
 	AudioCodec    string

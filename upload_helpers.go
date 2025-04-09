@@ -37,9 +37,11 @@ func getAssestPath(mediaType string) (string, error) {
 
 }
 
+/*
 func (cfg *apiConfig) getS3Url(key string) string {
 	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", cfg.s3Bucket, cfg.s3Region, key)
 }
+*/
 
 func processVideoForFastStart(inputFilePath string) (string, error) {
 	processedFilePath := fmt.Sprintf("%s.processing", inputFilePath)

@@ -67,21 +67,21 @@ func (cfg *apiConfig) handlerUsersCreate(w http.ResponseWriter, r *http.Request)
 		}
 
 		log.Println(user.Email + "created successfully, redirecting to /app")
-		http.Redirect(w, r, "/app", http.StatusFound)
+
+		//http.Redirect(w, r, "/app", http.StatusFound)
+
+		respondWithJSON(w, http.StatusOK, response{
+			User: User{
+				ID:           user.ID,
+				PasswordHash: user.PasswordHash,
+				Username:     user.Username,
+				Email:        user.Email,
+				CreatedAt:    user.CreatedAt,
+				UpdatedAt:    user.UpdatedAt,
+			},
+		})
 
 		return
-		/*
-			respondWithJSON(w, http.StatusOK, response{
-				User: User{
-					ID:           user.ID,
-					PasswordHash: user.PasswordHash,
-					Username:     user.Username,
-					Email:        user.Email,
-					CreatedAt:    user.CreatedAt,
-					UpdatedAt:    user.UpdatedAt,
-				},
-			})
-		*/
 	}
 
 }

@@ -7,12 +7,10 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"sync"
 	"sync/atomic"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"
 	"github.com/sashabaranov/go-openai"
 	"github.com/thom151/leadme/internal/auth"
@@ -22,7 +20,6 @@ import (
 
 type apiConfig struct {
 	db             *database.Queries
-	deepgramConn   *websocket.Conn
 	openaiClient   *openai.Client
 	s3Client       *s3.Client
 	platform       string
@@ -37,7 +34,6 @@ type apiConfig struct {
 	s3CfDistro     string
 	tavusApiKey    string
 	fileserverHits atomic.Int32
-	mu             sync.Mutex
 }
 
 func main() {
@@ -196,6 +192,10 @@ func (cfg *apiConfig) handlerIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	voice_assistants, err := cfg.db.GetAssistantsByUserID(r.Context(), userId.String())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "error getting assistants", err.Error())
+		return
+	}
 
 	for _, voice_assistant := range voice_assistants {
 		fmt.Println(voice_assistant.ClonedVoiceID)

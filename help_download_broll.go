@@ -21,7 +21,7 @@ func downloadFromS3(s3URL, taskPath string) (string, error) {
 	}
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
-		return "", fmt.Errorf("Failed to load s3 config: %v", err)
+		return "", fmt.Errorf("failed to load s3 config: %v", err)
 	}
 	client := s3.NewFromConfig(cfg)
 	resp, err := client.GetObject(context.Background(), &s3.GetObjectInput{

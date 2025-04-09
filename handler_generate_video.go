@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -74,6 +73,12 @@ func (cfg *apiConfig) handlerGenerateVideo(w http.ResponseWriter, r *http.Reques
 			ContactID: user.Email,
 			ThreadID:  threadID.ID,
 		})
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, "error creating new thread", err.Error())
+			return
+		}
+
+		log.Printf("New thread created: %v\n", thread.ThreadID)
 	}
 	log.Println("Got Thread")
 
@@ -220,25 +225,6 @@ func (cfg *apiConfig) handlerGenerateVideo(w http.ResponseWriter, r *http.Reques
 	log.Println("Successfully edited: ", outputFile)
 
 	respondWithJSON(w, http.StatusOK, "ok")
-
-}
-
-func (cfg *apiConfig) dbVideoSeriesToSignedVideoSeries(series database.VideoSeries) (database.VideoSeries, error) {
-	if series.S3Url.String == "" {
-		return series, nil
-	}
-	parts := strings.Split(series.S3Url.String, ",")
-	if len(parts) < 2 {
-		return series, nil
-	}
-	bucket := parts[0]
-	key := parts[1]
-	presigned, err := generatePresignedURL(cfg.s3Client, bucket, key, 5*time.Minute)
-	if err != nil {
-		return series, err
-	}
-	series.S3Url = sql.NullString{String: presigned, Valid: presigned != ""}
-	return series, nil
 
 }
 

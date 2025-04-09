@@ -88,52 +88,6 @@ func (cfg *apiConfig) generateVideoHeygen(avatarId string, series database.Video
 
 }
 
-func (cfg *apiConfig) getShareURL(videoID string) (string, error) {
-	url := "https://api.heygen.com/v1/video/share"
-
-	// Construct the request payload
-	payload := ShareRequest{
-		VideoID: videoID,
-	}
-	jsonPayload, err := json.Marshal(payload)
-	if err != nil {
-		return "", fmt.Errorf("error marshaling payload: %w", err)
-	}
-
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonPayload))
-	if err != nil {
-		return "", fmt.Errorf("error creating request: %w", err)
-	}
-
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Api-Key", cfg.heygenApiKey)
-
-	client := &http.Client{}
-	res, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("error executing request: %w", err)
-	}
-	defer res.Body.Close()
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return "", fmt.Errorf("error reading response: %w", err)
-	}
-
-	if res.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("API returned non-200 status: %s - %s", res.Status, string(body))
-	}
-
-	var shareResp ShareResponse
-	err = json.Unmarshal(body, &shareResp)
-	if err != nil {
-		return "", fmt.Errorf("error unmarshaling response: %w", err)
-	}
-
-	return shareResp.Data, nil
-}
-
 func downloadHeygenVideo(shareURL, outputPath string) error {
 	dir := filepath.Dir(outputPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {

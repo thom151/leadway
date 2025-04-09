@@ -89,7 +89,7 @@ func getResponse(c *openai.Client, thread_id, run_id string) (openaiSmartRespons
 			}
 
 			if len(assistantMsg.Content) == 0 {
-				return openaiSmartResponse{}, fmt.Errorf("No assistant content")
+				return openaiSmartResponse{}, fmt.Errorf("no assistant content")
 			}
 
 			if assistantMsg.Content[0].Type != "text" {
