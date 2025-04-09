@@ -15,6 +15,10 @@ import (
 
 func downloadFromS3(s3URL, taskPath string) (string, error) {
 	fullBrollPath := filepath.Join(taskPath, "template.mp4")
+	safeFullBrollPath, err := safePath(taskPath, fullBrollPath)
+	if err != nil {
+		return "", err
+	}
 	bucket, key, err := parseS3URL(s3URL)
 	if err != nil {
 		return "", err
@@ -33,23 +37,24 @@ func downloadFromS3(s3URL, taskPath string) (string, error) {
 	}
 	defer resp.Body.Close()
 
-	if err := os.MkdirAll(taskPath, 0700); err != nil {
+	if err := os.MkdirAll(taskPath, 0750); err != nil {
 		return "", fmt.Errorf("failed to create directory %s: %v", taskPath, err)
 	}
 
-	f, err := os.Create(fullBrollPath)
+	f, err := os.OpenFile(safeFullBrollPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to create file %s: %v", safeFullBrollPath, err)
 	}
 	defer f.Close()
+
 	if _, err = io.Copy(f, resp.Body); err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to write S3 content to file %s: %v", safeFullBrollPath, err)
 	}
 
-	if _, err := os.Stat(fullBrollPath); err != nil {
-		return "", err
+	if _, err := os.Stat(safeFullBrollPath); err != nil {
+		return "", fmt.Errorf("file %s was not created successfully: %v", safeFullBrollPath, err)
 	}
-	return fullBrollPath, nil
+	return safeFullBrollPath, nil
 }
 
 func parseS3URL(s3URL string) (bucket, key string, err error) {

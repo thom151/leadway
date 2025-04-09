@@ -39,11 +39,15 @@ type apiConfig struct {
 func main() {
 
 	const filepathRoot = "./templates/"
-	const port = "8080"
 
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Cannot load env" + err.Error())
+	}
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		log.Fatal("port url not set")
 	}
 
 	dbURL := os.Getenv("DATABASE_URL")

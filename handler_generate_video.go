@@ -110,15 +110,22 @@ func (cfg *apiConfig) handlerGenerateVideo(w http.ResponseWriter, r *http.Reques
 	}
 	log.Println("generated audio successful")
 
-	audioFile := fmt.Sprintf("audio_%s.mp3", uuid.New().String())
-	err = os.WriteFile(audioFile, audioBytes, 0644)
+	tempDir := os.TempDir() // Use system temp directory as base
+	audioFile := filepath.Join(tempDir, fmt.Sprintf("audio_%s.mp3", uuid.New().String()))
+	safeAudioFile, err := safePath(tempDir, audioFile)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "invalid audio file path", err.Error())
+		return
+	}
+
+	// Write file with 0600 permissions (owner-only) to satisfy G306
+	err = os.WriteFile(safeAudioFile, audioBytes, 0600)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "error saving audio file", err.Error())
 		return
 	}
-	log.Println("audio file successfully saved")
-
-	defer os.Remove(audioFile)
+	log.Println("audio file successfully saved:", safeAudioFile)
+	defer os.Remove(safeAudioFile)
 
 	key, err := getAssestPath("audio/mp3")
 	if err != nil {
@@ -162,7 +169,6 @@ func (cfg *apiConfig) handlerGenerateVideo(w http.ResponseWriter, r *http.Reques
 		respondWithError(w, http.StatusInternalServerError, "error generating presigned url", err.Error())
 		return
 	}
-	time.Sleep(10 * time.Second)
 	log.Println(series.AudioS3)
 
 	log.Println("generating video...")

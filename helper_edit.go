@@ -81,21 +81,24 @@ func (cfg *apiConfig) edit(video, audio, broll, music, userId string, ts []float
 
 	//put each segment in a file
 	concatTextFile := filepath.Join(taskPath, "concat.txt")
-	concatContent := strings.NewReader(fmt.Sprintf("file '%s'\nfile '%s'\nfile '%s'\n",
-		filepath.Base(segment1), filepath.Base(segment2), filepath.Base(segment3)))
-	f, err := os.Create(concatTextFile)
+	safeConcatTextFile, err := safePath(taskPath, concatTextFile)
+	if err != nil {
+		return "", err
+	}
+	f, err := os.OpenFile(safeConcatTextFile, os.O_CREATE|os.O_WRONLY, 0600) // Use 0600 permissions
 	if err != nil {
 		return "", fmt.Errorf("failed to create concat.txt: %v", err)
 	}
 	defer f.Close()
-	_, err = io.Copy(f, concatContent)
-	if err != nil {
+	concatContent := strings.NewReader(fmt.Sprintf("file '%s'\nfile '%s'\nfile '%s'\n",
+		filepath.Base(segment1), filepath.Base(segment2), filepath.Base(segment3)))
+	if _, err := io.Copy(f, concatContent); err != nil {
 		return "", fmt.Errorf("failed to write concat.txt: %v", err)
 	}
-	filesForCleanup = append(filesForCleanup, concatTextFile)
+	filesForCleanup = append(filesForCleanup, safeConcatTextFile)
 	log.Println("CONCAT TEXT FILE SAVED ... ")
 	// use ffmpeg to concatenate all three files
-	concatOutputPath, err := concatVideosFromTextFile(concatTextFile, taskPath, videoFormat)
+	concatOutputPath, err := concatVideosFromTextFile(safeConcatTextFile, taskPath, videoFormat)
 	if err != nil {
 		return "", err
 	}
@@ -129,11 +132,28 @@ func cleanFiles(files []string) error {
 }
 
 func overlayAudio(audioPath, musicPath, concatenatedPath, taskPath string, videoFormat videoSeriesFormat) (string, error) {
-	outputPath := filepath.Join(taskPath, "output.mp4")
+	safeTaskPath, err := safePath(filepath.Dir(concatenatedPath), taskPath)
+	if err != nil {
+		return "", err
+	}
+	outputPath := filepath.Join(safeTaskPath, "output.mp4")
+
+	safeConcatPath, err := safePath(safeTaskPath, concatenatedPath)
+	if err != nil {
+		return "", err
+	}
+	safeAudioPath, err := safePath(safeTaskPath, audioPath)
+	if err != nil {
+		return "", err
+	}
+	safeMusicPath, err := safePath(safeTaskPath, musicPath)
+	if err != nil {
+		return "", err
+	}
 	cmd := exec.Command("ffmpeg",
-		"-i", concatenatedPath,
-		"-i", audioPath,
-		"-i", musicPath,
+		"-i", safeConcatPath,
+		"-i", safeAudioPath,
+		"-i", safeMusicPath,
 		"-filter_complex",
 		"[1:a]volume=1.5[a1];[2:a]volume=0.3[a2];[a1][a2]amix=inputs=2:duration=first:dropout_transition=0[a]",
 		"-map", "0:v:0",
@@ -154,11 +174,20 @@ func overlayAudio(audioPath, musicPath, concatenatedPath, taskPath string, video
 }
 
 func concatVideosFromTextFile(textFile, taskPath string, videoFormat videoSeriesFormat) (string, error) {
-	concatOutput := filepath.Join(taskPath, "concat_video.mp4")
+	safeTaskPath, err := safePath(filepath.Dir(textFile), taskPath)
+	if err != nil {
+		return "", err
+	}
+	concatOutput := filepath.Join(safeTaskPath, "concat_video.mp4")
+
+	safeTextFile, err := safePath(safeTaskPath, textFile)
+	if err != nil {
+		return "", err
+	}
 	cmd := exec.Command("ffmpeg",
 		"-f", "concat",
 		"-safe", "0",
-		"-i", textFile,
+		"-i", safeTextFile,
 		"-c:v", videoFormat.VideoCodec,
 		"-preset", "fast",
 		"-an",
@@ -185,16 +214,25 @@ func cutAndSaveAudio(audioPath, outputPath string, duration float64, videoFormat
 		return fmt.Errorf("requested duration exceeds music duration")
 	}
 
+	safeAudioPath, err := safePath(filepath.Dir(audioPath), audioPath)
+	if err != nil {
+		return err
+	}
+	safeOutputPath, err := safePath(filepath.Dir(audioPath), outputPath)
+	if err != nil {
+		return err
+	}
+
 	fadeDuration := 2.0
 	fadeStart := duration - fadeDuration
 	args := []string{
-		"-i", audioPath,
+		"-i", safeAudioPath,
 		"-t", fmt.Sprintf("%.2f", duration), // Duration to cut
 		"-af", fmt.Sprintf("afade=t=out:st=%.2f:d=%.2f", fadeStart, fadeDuration), // Fade-out filter
 		"-c:a", videoFormat.AudioCodec,
 		"-ar", videoFormat.SampleRate,
 		"-channel_layout", videoFormat.ChannelLayout,
-		outputPath,
+		safeOutputPath,
 	}
 	cmd := exec.Command("ffmpeg", args...)
 	var stderr bytes.Buffer
@@ -206,10 +244,10 @@ func cutAndSaveAudio(audioPath, outputPath string, duration float64, videoFormat
 		return fmt.Errorf("failed to cut audio: %v, stderr: %s", err, stderr.String())
 	}
 
-	if _, err := os.Stat(outputPath); err != nil {
+	if _, err := os.Stat(safeOutputPath); err != nil {
 		return fmt.Errorf("output audio file was not created: %v", err)
 	}
-	outputDuration, err := getTotalDuration(outputPath)
+	outputDuration, err := getTotalDuration(safeOutputPath)
 	if err != nil {
 		return fmt.Errorf("output audio file %s is not playable: %v", outputPath, err)
 	}
@@ -235,9 +273,17 @@ func getTotalDuration(video string) (float64, error) {
 }
 
 func cutAndSaveVideo(inputPath, outputPath string, startTime, duration float64, videoFormat videoSeriesFormat, muteAudio ...bool) error {
+	safeInputPath, err := safePath(filepath.Dir(inputPath), inputPath)
+	if err != nil {
+		return err
+	}
+	safeOutputPath, err := safePath(filepath.Dir(inputPath), outputPath)
+	if err != nil {
+		return err
+	}
 	args := []string{
 		"-ss", fmt.Sprintf("%.2f", startTime),
-		"-i", inputPath,
+		"-i", safeInputPath,
 		"-t", fmt.Sprintf("%.2f", duration),
 		"-c:v", videoFormat.VideoCodec,
 		"-preset", "fast",
@@ -256,7 +302,7 @@ func cutAndSaveVideo(inputPath, outputPath string, startTime, duration float64, 
 	}
 
 	var stderr bytes.Buffer
-	args = append(args, "-f", "mp4", "-movflags", "faststart", outputPath)
+	args = append(args, "-f", "mp4", "-movflags", "faststart", safeOutputPath)
 
 	cmd := exec.Command("ffmpeg", args...)
 	cmd.Stderr = &stderr
@@ -267,7 +313,7 @@ func cutAndSaveVideo(inputPath, outputPath string, startTime, duration float64, 
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to run FFmpeg: %v, stderr: %s", err, stderr.String())
 	}
-	if _, err := os.Stat(outputPath); err != nil {
+	if _, err := os.Stat(safeOutputPath); err != nil {
 		return fmt.Errorf("output file was not created: %v", err)
 	}
 	return nil
@@ -277,8 +323,11 @@ func cutAndSaveVideo(inputPath, outputPath string, startTime, duration float64, 
 func (cfg *apiConfig) getCutTimestamps(audio string, aiResp openaiSmartResponse) ([]float64, error) {
 	log.Println("Ai Smart Response: ", aiResp.CutWords)
 	url := "https://api.deepgram.com/v1/listen?smart_format=true"
-
-	file, err := os.Open(audio)
+	safeAudioPath, err := safePath(filepath.Dir(audio), audio)
+	if err != nil {
+		return nil, err
+	}
+	file, err := os.Open(safeAudioPath)
 	if err != nil {
 		return nil, err
 	}
@@ -329,16 +378,28 @@ func extractAudio(videoPath string) (string, error) {
 	audioFileName = strings.Replace(audioFileName, ".mp4", ".mp3", 1)
 	audioPath := filepath.Join(dir, audioFileName)
 
-	cmd := exec.Command("ffmpeg", "-i", videoPath, "-vn", "-acodec", "mp3", audioPath)
+	safeVideoPath, err := safePath(dir, videoPath)
+	if err != nil {
+		return "", err
+	}
+	safeAudioPath, err := safePath(dir, audioPath)
+	if err != nil {
+		return "", err
+	}
+
+	cmd := exec.Command("ffmpeg", "-i", safeVideoPath, "-vn", "-acodec", "mp3", safeAudioPath)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	log.Printf("Running FFmpeg command: %v", cmd.Args)
 	if err := cmd.Run(); err != nil {
 		return "", fmt.Errorf("failed to extract audio: %v", err)
 	}
 
-	if _, err := os.Stat(audioPath); err != nil {
+	if _, err := os.Stat(safeAudioPath); err != nil {
 		return "", fmt.Errorf("audio file was not created: %v", err)
 	}
 
-	return audioPath, nil
+	return safeAudioPath, nil
 }
 
 type deepgramSmartResponse struct {

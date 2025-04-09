@@ -57,10 +57,10 @@ func (cfg *apiConfig) generateVideoHeygen(avatarId string, series database.Video
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Api-Key", cfg.heygenApiKey)
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 30 * time.Second}
 	res, err := client.Do(req)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("executing request: %w", err)
 	}
 	defer res.Body.Close()
 
@@ -90,7 +90,11 @@ func (cfg *apiConfig) generateVideoHeygen(avatarId string, series database.Video
 
 func downloadHeygenVideo(shareURL, outputPath string) error {
 	dir := filepath.Dir(outputPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	safeOutputPath, err := safePath(dir, outputPath)
+	if err != nil {
+		return fmt.Errorf("invalid output path: %w", err)
+	}
+	if err := os.MkdirAll(dir, 0750); err != nil {
 		return fmt.Errorf("error creating directories: %w", err)
 	}
 
@@ -105,9 +109,9 @@ func downloadHeygenVideo(shareURL, outputPath string) error {
 		return fmt.Errorf("download failed with status: %s", resp.Status)
 	}
 
-	out, err := os.Create(outputPath)
+	out, err := os.OpenFile(safeOutputPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
-		return fmt.Errorf("error creating file: %w", err)
+		return fmt.Errorf("error creating file %s: %w", safeOutputPath, err)
 	}
 	defer out.Close()
 

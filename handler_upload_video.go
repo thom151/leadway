@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
 	"io"
@@ -61,7 +62,8 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	videoFile, err := os.CreateTemp("", "leadway-template-upload.mp4")
+	tempDir := os.TempDir()
+	videoFile, err := os.CreateTemp(tempDir, "leadway-template-upload-*.mp4")
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "error saving file", err.Error())
 		return
@@ -78,14 +80,25 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 	log.Println("copy successful")
 
 	transcodedFilePath := fmt.Sprintf("%s-transcoded.mp4", videoFile.Name())
-	cmd := exec.Command("ffmpeg", "-i", videoFile.Name(), "-c:v", "libx264", "-c:a", "aac", "-f", "mp4", transcodedFilePath)
-	cmd.Stdout = os.Stdout // Log FFmpeg output
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		respondWithError(w, http.StatusInternalServerError, "error transcoding video to H.264", err.Error())
+	safeTranscodedFilePath, err := safePath(tempDir, transcodedFilePath)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "invalid transcoded file path", err.Error())
 		return
 	}
-	defer os.Remove(transcodedFilePath)
+	safeVideoFilePath, err := safePath(tempDir, videoFile.Name())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "invalid video file path", err.Error())
+		return
+	}
+	cmd := exec.Command("ffmpeg", "-i", safeVideoFilePath, "-c:v", "libx264", "-c:a", "aac", "-f", "mp4", safeTranscodedFilePath)
+	var stderr bytes.Buffer
+	cmd.Stdout = os.Stdout // Log FFmpeg output
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		respondWithError(w, http.StatusInternalServerError, "error transcoding video to H.264", fmt.Sprintf("%v, stderr: %s", err, stderr.String()))
+		return
+	}
+	defer os.Remove(safeTranscodedFilePath)
 	log.Println("transcoded video to H.264")
 
 	key, err := getAssestPath(mediaType)
@@ -96,13 +109,18 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 
 	key = filepath.Join(user.ID, "templates", key)
 
-	processedFilePath, err := processVideoForFastStart(transcodedFilePath)
+	processedFilePath, err := processVideoForFastStart(safeTranscodedFilePath)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "error processing fast video", err.Error())
 		return
 	}
-	defer os.Remove(processedFilePath)
-	log.Println("processed video file")
+	safeProcessedFilePath, err := safePath(tempDir, processedFilePath)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "invalid processed file path", err.Error())
+		return
+	}
+	defer os.Remove(safeProcessedFilePath)
+	log.Println("processed video file:", safeProcessedFilePath)
 
 	processedFile, err := os.Open(processedFilePath)
 	if err != nil {

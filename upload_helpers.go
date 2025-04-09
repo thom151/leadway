@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -45,7 +46,9 @@ func (cfg *apiConfig) getS3Url(key string) string {
 
 func processVideoForFastStart(inputFilePath string) (string, error) {
 	processedFilePath := fmt.Sprintf("%s.processing", inputFilePath)
-
+	if !filepath.IsAbs(inputFilePath) {
+		inputFilePath = filepath.Join("/safe/base/path", inputFilePath) // Restrict to safe directory
+	}
 	cmd := exec.Command("ffmpeg", "-i", inputFilePath, "-movflags", "faststart", "-codec", "copy", "-f", "mp4", processedFilePath)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
