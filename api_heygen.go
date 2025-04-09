@@ -88,12 +88,8 @@ func (cfg *apiConfig) generateVideoHeygen(avatarId string, series database.Video
 
 }
 
-func downloadHeygenVideo(shareURL, outputPath string) error {
-	dir := filepath.Dir(outputPath)
-	safeOutputPath, err := safePath(dir, outputPath)
-	if err != nil {
-		return fmt.Errorf("invalid output path: %w", err)
-	}
+func downloadHeygenVideo(shareURL, safeOutputPath string) error {
+	dir := filepath.Dir(safeOutputPath)
 	if err := os.MkdirAll(dir, 0750); err != nil {
 		return fmt.Errorf("error creating directories: %w", err)
 	}

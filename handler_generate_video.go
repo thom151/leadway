@@ -111,7 +111,7 @@ func (cfg *apiConfig) handlerGenerateVideo(w http.ResponseWriter, r *http.Reques
 	log.Println("generated audio successful")
 
 	tempDir := os.TempDir() // Use system temp directory as base
-	audioFile := filepath.Join(tempDir, fmt.Sprintf("audio_%s.mp3", uuid.New().String()))
+	audioFile := fmt.Sprintf("audio_%s.mp3", uuid.New().String())
 	safeAudioFile, err := safePath(tempDir, audioFile)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "invalid audio file path", err.Error())
@@ -134,7 +134,7 @@ func (cfg *apiConfig) handlerGenerateVideo(w http.ResponseWriter, r *http.Reques
 	}
 	key = filepath.Join(user.ID, "test", "audio", key)
 
-	processedFile, err := os.Open(audioFile)
+	processedFile, err := os.Open(safeAudioFile)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "error opening fast video", err.Error())
 		return
@@ -187,15 +187,21 @@ func (cfg *apiConfig) handlerGenerateVideo(w http.ResponseWriter, r *http.Reques
 		respondWithError(w, http.StatusInternalServerError, "error downloading file", err.Error())
 		return
 	}
-	videoPath := filepath.Join("temp", user.ID, taskID, "video.mp4")
-	err = downloadHeygenVideo(heyUrl, videoPath)
+	tempDir = os.TempDir()
+	videoPath := filepath.Join(user.ID, taskID, "video.mp4")
+	safeVideoPath, err := safePath(tempDir, videoPath)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "error extracting audio", err.Error())
+		respondWithError(w, http.StatusIMUsed, "invalid video file path", err.Error())
+		return
+	}
+	err = downloadHeygenVideo(heyUrl, safeVideoPath)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "error downloading video", err.Error())
 		return
 	}
 
 	log.Println("video downloaded")
-	audioPath, err := extractAudio(videoPath)
+	audioPath, err := extractAudio(safeVideoPath)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "error extracting audio", err.Error())
 		return
@@ -214,14 +220,21 @@ func (cfg *apiConfig) handlerGenerateVideo(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	templatePath, err := downloadFromS3(signedVid.S3Url.String, filepath.Join("temp", user.ID, taskID))
+	templatePathDir := filepath.Join(user.ID, taskID)
+	safeTemplatePathDir, err := safePath(tempDir, templatePathDir)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "invalid template directory path", err.Error())
+		return
+	}
+	templatePath, err := downloadFromS3(signedVid.S3Url.String, safeTemplatePathDir)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "error downloading video template", err.Error())
 		return
 	}
+	defer os.Remove(templatePath)
 
 	musicPath := filepath.Join("assets", "prelist", "prelist.mp3")
-	outputFile, err := cfg.edit(videoPath, audioPath, templatePath, musicPath, user.ID, timestamps)
+	outputFile, err := cfg.edit(safeVideoPath, audioPath, templatePath, musicPath, user.ID, timestamps)
 
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "error editing the video", err.Error())
