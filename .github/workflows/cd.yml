@@ -19,7 +19,9 @@ jobs:
           go-version: '1.23.0'
 
       - name: Build app
-        run: ./scripts/buildprod.sh
+        run: |
+          chmod +x ./scripts/buildprod.sh
+          ./scripts/buildprod.sh
 
       - id: auth
         uses: google-github-actions/auth@v2
