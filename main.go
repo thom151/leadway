@@ -43,7 +43,7 @@ func main() {
 
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Cannot load env" + err.Error())
+		log.Println("Cannot load env. Relying on GCLOUD env files" + err.Error())
 	}
 
 	port := os.Getenv("PORT")
