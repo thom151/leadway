@@ -41,9 +41,13 @@ func main() {
 
 	const filepathRoot = "./templates/"
 
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("Cannot load env. Relying on GCLOUD env files" + err.Error())
+	production := true
+	if !production {
+		err := godotenv.Load()
+		if err != nil {
+			log.Fatal("Cannot load env" + err.Error())
+		}
+
 	}
 
 	port := os.Getenv("PORT")
