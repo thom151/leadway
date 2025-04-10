@@ -33,7 +33,6 @@ type apiConfig struct {
 	s3Bucket       string
 	s3Region       string
 	s3CfDistro     string
-	tavusApiKey    string
 	fileserverHits atomic.Int32
 }
 
@@ -41,7 +40,7 @@ func main() {
 
 	const filepathRoot = "./templates/"
 
-	production := true
+	production := false
 	if !production {
 		err := godotenv.Load()
 		if err != nil {
@@ -110,11 +109,6 @@ func main() {
 		log.Fatal("s3 cf distro not set")
 	}
 
-	tavusApiKey := os.Getenv("TAVUS_API_KEY")
-	if tavusApiKey == "" {
-		log.Fatal("heygen api key not set")
-	}
-
 	db, err := sql.Open("libsql", dbURL)
 	if err != nil {
 		log.Fatal("Cannot open db" + err.Error())
@@ -142,7 +136,6 @@ func main() {
 		elevenApiKey:   elevenApiKey,
 		openaiApiKey:   openaiApiKey,
 		deepgramApiKey: deepgramApiKey,
-		tavusApiKey:    tavusApiKey,
 		heygenApiKey:   heygenApiKey,
 	}
 	mux := http.NewServeMux()
@@ -155,7 +148,6 @@ func main() {
 
 	mux.HandleFunc("/api/users", apiCfg.handlerUsersCreate)
 	mux.HandleFunc("/api/login", apiCfg.handlerLogin)
-	mux.HandleFunc("/api/clone-voice", apiCfg.handlerCloneVoice)
 	mux.HandleFunc("/app/", apiCfg.handlerIndex)
 
 	mux.HandleFunc("POST /api/refresh", apiCfg.handlerRefresh)
@@ -169,8 +161,6 @@ func main() {
 	mux.HandleFunc("GET /api/series/{avatarID}", apiCfg.handlerStartVideoSeries)
 	mux.HandleFunc("POST /api/video_series_meta/{avatarID}", apiCfg.handlerVideoSeriesMetaCreate)
 	mux.HandleFunc("POST /api/video_series_generate/{avatarID}", apiCfg.handlerGenerateVideo)
-	mux.HandleFunc("POST /api/create_client", apiCfg.handlerCreateClient)
-	mux.HandleFunc("GET /api/record", apiCfg.handlerRecordVideo)
 
 	//AVATARS
 	mux.HandleFunc("GET /api/avatars", apiCfg.handlerGetAvatars)

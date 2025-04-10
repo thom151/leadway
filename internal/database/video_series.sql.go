@@ -130,6 +130,33 @@ func (q *Queries) SetAudioUrl(ctx context.Context, arg SetAudioUrlParams) (Video
 	return i, err
 }
 
+const setFIFUrl = `-- name: SetFIFUrl :one
+UPDATE video_series SET s3_url= ?
+WHERE id = ?
+RETURNING id, title, description, user_id, s3_url, audio_s3, created_at, updated_at
+`
+
+type SetFIFUrlParams struct {
+	S3Url sql.NullString
+	ID    string
+}
+
+func (q *Queries) SetFIFUrl(ctx context.Context, arg SetFIFUrlParams) (VideoSeries, error) {
+	row := q.db.QueryRowContext(ctx, setFIFUrl, arg.S3Url, arg.ID)
+	var i VideoSeries
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Description,
+		&i.UserID,
+		&i.S3Url,
+		&i.AudioS3,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const updateVideoSeries = `-- name: UpdateVideoSeries :exec
 UPDATE video_series 
 SET

@@ -15,6 +15,11 @@ UPDATE video_series SET audio_s3 = ?
 WHERE id = ?
 RETURNING *;
 
+-- name: SetFIFUrl :one
+UPDATE video_series SET s3_url= ?
+WHERE id = ?
+RETURNING *;
+
 -- name: UpdateVideoSeries :exec
 UPDATE video_series 
 SET
