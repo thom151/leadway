@@ -8,7 +8,8 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -36,6 +37,12 @@ jobs:
 
       - name: Build and push Docker image
         run: gcloud builds submit --tag australia-southeast2-docker.pkg.dev/leadway-42314/leadway-ar-repo/leadway:latest .
+
+      - name: Install goose
+        run: go install github.com/pressly/goose/v3/cmd/goose@latest
+
+      - name: Run migrations
+        run: ./scripts/migrateup.sh
 
       - name: Deploy to Cloud run
         run: gcloud run deploy leadway --image australia-southeast2-docker.pkg.dev/leadway-42314/leadway-ar-repo/leadway:latest --region  australia-southeast2 --allow-unauthenticated --project  leadway-42314 --max-instances=4
