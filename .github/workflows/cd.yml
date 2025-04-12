@@ -42,7 +42,10 @@ jobs:
         run: go install github.com/pressly/goose/v3/cmd/goose@latest
 
       - name: Run migrations
-        run: ./scripts/migrateup.sh
+        run: |
+          chmod +x ./scripts/migrateup.sh
+          ./scripts/migrateup.sh
+
 
       - name: Deploy to Cloud run
         run: gcloud run deploy leadway --image australia-southeast2-docker.pkg.dev/leadway-42314/leadway-ar-repo/leadway:latest --region  australia-southeast2 --allow-unauthenticated --project  leadway-42314 --max-instances=4
