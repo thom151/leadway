@@ -96,7 +96,7 @@ func (cfg *apiConfig) handlerGenerateVideo(w http.ResponseWriter, r *http.Reques
 	log.Println("FIF: ", signedFIF.S3Url.String)
 	log.Println("Successfully edited: ", outputPath)
 
-	http.Redirect(w, r, fmt.Sprintf("/fif/%s", "99042633-458f-4a99-b272-4643a35b2233"), http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/fif/%s", seriesWithFIF.ID), http.StatusSeeOther)
 	//	respondWithJSON(w, http.StatusOK, signedFIF)
 }
 
