@@ -97,6 +97,7 @@ func (cfg *apiConfig) handlerGenerateVideo(w http.ResponseWriter, r *http.Reques
 	log.Println("Successfully edited: ", outputPath)
 
 	http.Redirect(w, r, fmt.Sprintf("/fif/%s", "99042633-458f-4a99-b272-4643a35b2233"), http.StatusSeeOther)
+	//	respondWithJSON(w, http.StatusOK, signedFIF)
 }
 
 func (cfg *apiConfig) dbAudioToSignedAudio(series database.VideoSeries) (database.VideoSeries, error) {
