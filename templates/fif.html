@@ -1,0 +1,16 @@
+{{ define "title" }}Video Preview{{ end }}
+{{ define "stylesheet" }}
+{{ end }}
+{{ define "content" }}
+    {{ if .S3Url.Valid }}
+        <div>
+            <h2>Generated Video</h2>
+            <video class="video-player" controls>
+                <source src="{{ .S3Url.String }}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+    {{ else }}
+        <p>No video available.</p>
+    {{ end }}
+{{ end }}

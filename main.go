@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
-	"fmt"
+//	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -14,7 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/joho/godotenv"
 	"github.com/sashabaranov/go-openai"
-	"github.com/thom151/leadme/internal/auth"
+//	"github.com/thom151/leadme/internal/auth"
 	"github.com/thom151/leadme/internal/database"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
@@ -148,7 +148,7 @@ func main() {
 
 	mux.HandleFunc("/api/users", apiCfg.handlerUsersCreate)
 	mux.HandleFunc("/api/login", apiCfg.handlerLogin)
-	mux.HandleFunc("/app/", apiCfg.handlerIndex)
+	mux.HandleFunc("/app/", apiCfg.handlerGetAvatars)
 
 	mux.HandleFunc("POST /api/refresh", apiCfg.handlerRefresh)
 	mux.HandleFunc("POST /api/revoke", apiCfg.handlerRevoke)
@@ -161,6 +161,7 @@ func main() {
 	mux.HandleFunc("GET /api/series/{avatarID}", apiCfg.handlerStartVideoSeries)
 	mux.HandleFunc("POST /api/video_series_meta/{avatarID}", apiCfg.handlerVideoSeriesMetaCreate)
 	mux.HandleFunc("POST /api/video_series_generate/{avatarID}", apiCfg.handlerGenerateVideo)
+	mux.HandleFunc("/fif/{seriesID}", apiCfg.handlerShowFif)
 
 	//AVATARS
 	mux.HandleFunc("GET /api/avatars", apiCfg.handlerGetAvatars)
@@ -175,6 +176,7 @@ func main() {
 	log.Fatal(srv.ListenAndServe())
 }
 
+/*
 func (cfg *apiConfig) handlerIndex(w http.ResponseWriter, r *http.Request) {
 	type AssistandData struct {
 		VoiceAssistants []database.VoiceAssistant
@@ -206,3 +208,5 @@ func (cfg *apiConfig) handlerIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	renderTemplate(w, "home", voiceAssistantData)
 }
+
+*/

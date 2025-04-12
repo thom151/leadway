@@ -24,26 +24,17 @@
     <div id="overlay" class="overlay"></div>
    <div class="nav-bar-container">
         <div class="left-container">
-            <img src="/static/imgs/leadway_logo.png" class="leadway-logo">
+            <a href="/api/avatars"><img src="/static/imgs/leadway_logo.png" class="leadway-logo"></a>
         </div>
        
         <div class="middle-container">
             <input type="text" placeholder="Search" name="text" class="search-input">
         </div>
         <div class="right-container">
-            <button class="clone-button" id="clone-button"> Clone + </button>
+            <button class="clone-button" id="clone-button"> <a href="/api/videos">UPLOAD + </a></button>
         </div>
    </div>
-   <div class="sidebar">
-        <ul>
-            <li>Knowledge Base</li>
-            <li><a href="/api/avatars">Avatars</a></li>
-            <li><a href="/api/record">Record</a></li>
-            <li>Contacts</li>
-            <li><a href="/api/series">Series</a></li>
-            <li ><a href="/api/videos">Upload</a></li>
-        </ul>
-   </div>
+
    <main class="main-container">
         {{block "content" .}}{{ end }}
    </main>

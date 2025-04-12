@@ -137,23 +137,24 @@
                 body: JSON.stringify(payload),
             }); 
 
+            if (response.redirected) {
+            window.location.href = response.url;
+            return;
+            }
+
             if (!response.ok) {
                 throw new Error ("network error: failed to create video series")
             }
-
+            
             const seriesResult = await response.json();
-            console.log(seriesResult.S3Url.String)
-            confirmationForm.style.display = "none"; // Hide form on success
-            alert("Video series created successfully!");
+            console.log("Video generated:", seriesResult);
+            alert("Video generated, but no redirect occurred.");
         } catch (error) {
-            console.log("Error: ", error)
-
+            console.error("Error generating video series:", error);
+            alert("Failed to generate video. Please try again.");
+            confirmationForm.style.display = "none";
         }
-
-
-        
-
-    })    
+    });   
 
 </script>
 {{ end }}

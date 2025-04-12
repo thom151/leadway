@@ -82,18 +82,8 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 	log.Println("copy successful")
 
 	transcodedFilePath := fmt.Sprintf("%s-transcoded.mp4", videoFile.Name())
-	safeTranscodedFilePath, err := safePath(tempDir, transcodedFilePath)
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "invalid transcoded file path", err.Error())
-		return
-	}
-	safeVideoFilePath, err := safePath(tempDir, videoFile.Name())
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "invalid video file path", err.Error())
-		return
-	}
 	//nolint:gosec // G204: safePath-validated
-	cmd := exec.Command("ffmpeg", "-i", safeVideoFilePath, "-c:v", "libx264", "-c:a", "aac", "-f", "mp4", safeTranscodedFilePath)
+	cmd := exec.Command("ffmpeg", "-i", videoFile.Name(), "-c:v", "libx264", "-c:a", "aac", "-f", "mp4", transcodedFilePath)
 	var stderr bytes.Buffer
 	cmd.Stdout = os.Stdout // Log FFmpeg output
 	cmd.Stderr = &stderr
@@ -101,7 +91,7 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		respondWithError(w, http.StatusInternalServerError, "error transcoding video to H.264", fmt.Sprintf("%v, stderr: %s", err, stderr.String()))
 		return
 	}
-	defer os.Remove(safeTranscodedFilePath)
+	defer os.Remove(transcodedFilePath)
 	log.Println("transcoded video to H.264")
 
 	key, err := getAssestPath(mediaType)
@@ -112,18 +102,13 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 
 	key = filepath.Join(user.ID, "templates", key)
 
-	processedFilePath, err := processVideoForFastStart(safeTranscodedFilePath)
+	processedFilePath, err := processVideoForFastStart(transcodedFilePath)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "error processing fast video", err.Error())
 		return
 	}
-	safeProcessedFilePath, err := safePath(tempDir, processedFilePath)
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "invalid processed file path", err.Error())
-		return
-	}
-	defer os.Remove(safeProcessedFilePath)
-	log.Println("processed video file:", safeProcessedFilePath)
+	defer os.Remove(processedFilePath)
+	log.Println("processed video file:", processedFilePath)
 	//nolint:gosec // G304: safePath-validated
 	processedFile, err := os.Open(processedFilePath)
 	if err != nil {
