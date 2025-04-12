@@ -40,7 +40,7 @@ func main() {
 
 	const filepathRoot = "./templates/"
 
-	production := true
+	production := false
 	if !production {
 		err := godotenv.Load()
 		if err != nil {
