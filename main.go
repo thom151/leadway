@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
-//	"fmt"
+	//	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -14,7 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/joho/godotenv"
 	"github.com/sashabaranov/go-openai"
-//	"github.com/thom151/leadme/internal/auth"
+	//	"github.com/thom151/leadme/internal/auth"
 	"github.com/thom151/leadme/internal/database"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
