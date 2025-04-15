@@ -53,9 +53,9 @@ func (cfg *apiConfig) edit(video, audio, broll, music, userId string, ts []float
 		ChannelLayout: "stereo",
 	}
 
-	segment1 := filepath.Join(taskPath, "segment1.mp4")
-	segment2 := filepath.Join(taskPath, "segment2.mp4")
-	segment3 := filepath.Join(taskPath, "segment3.mp4")
+	segment1 := filepath.Join(taskPath, "segment1.mp4") //agent talking
+	segment2 := filepath.Join(taskPath, "segment2.mp4") //
+	segment3 := filepath.Join(taskPath, "segment3.mp4") // agent talking (conclusion)
 	musicOut := filepath.Join(taskPath, "music.mp4")
 
 	err = cutAndSaveVideo(video, segment1, 0, ts[0], videoFormat)

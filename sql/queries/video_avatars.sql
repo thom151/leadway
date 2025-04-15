@@ -13,7 +13,7 @@ VALUES(
 SELECT * FROM video_avatars WHERE id = ?;
 
 
--- name: GetAvatarsByUser :many
+-- name: GetAvatarsByUser :one
 SELECT * FROM video_avatars WHERE user_id = ?;
 
 -- name: GetAvatarsByUserAndTemplateType :many

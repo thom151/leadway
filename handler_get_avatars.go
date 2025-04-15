@@ -22,8 +22,19 @@ type hey_avatars struct {
 }
 
 func (cfg *apiConfig) handlerGetAvatars(w http.ResponseWriter, r *http.Request) {
+	user, err := validateAndReturnUser(r, cfg)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "unauthorized: ", err.Error())
+		return
+	}
 
-	url := "https://api.heygen.com/v2/avatar_group/01f48bdf30414a2a8c9704fbfedc3c01/avatars"
+	avatarGroup, err := cfg.db.GetAvatarsByUser(r.Context(), user.ID)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "error getting avatar", err.Error())
+		return
+	}
+
+	url := "https://api.heygen.com/v2/avatar_group/" + avatarGroup.AvatarID + "/avatars"
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "error making new request", err.Error())
