@@ -76,41 +76,25 @@ func (q *Queries) GetAvatarById(ctx context.Context, id string) (VideoAvatar, er
 	return i, err
 }
 
-const getAvatarsByUser = `-- name: GetAvatarsByUser :many
+const getAvatarsByUser = `-- name: GetAvatarsByUser :one
 SELECT id, template_type, avatar_id, title, description, user_id, s3_url, created_at, updated_at FROM video_avatars WHERE user_id = ?
 `
 
-func (q *Queries) GetAvatarsByUser(ctx context.Context, userID string) ([]VideoAvatar, error) {
-	rows, err := q.db.QueryContext(ctx, getAvatarsByUser, userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []VideoAvatar
-	for rows.Next() {
-		var i VideoAvatar
-		if err := rows.Scan(
-			&i.ID,
-			&i.TemplateType,
-			&i.AvatarID,
-			&i.Title,
-			&i.Description,
-			&i.UserID,
-			&i.S3Url,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+func (q *Queries) GetAvatarsByUser(ctx context.Context, userID string) (VideoAvatar, error) {
+	row := q.db.QueryRowContext(ctx, getAvatarsByUser, userID)
+	var i VideoAvatar
+	err := row.Scan(
+		&i.ID,
+		&i.TemplateType,
+		&i.AvatarID,
+		&i.Title,
+		&i.Description,
+		&i.UserID,
+		&i.S3Url,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const getAvatarsByUserAndTemplateType = `-- name: GetAvatarsByUserAndTemplateType :many

@@ -40,7 +40,7 @@ func main() {
 
 	const filepathRoot = "./templates/"
 
-	production := true
+	production := false
 	if !production {
 		err := godotenv.Load()
 		if err != nil {
@@ -145,6 +145,7 @@ func main() {
 	mux.HandleFunc("GET /api/healthz", handlerReadiness)
 	mux.HandleFunc("GET /admin/metrics", apiCfg.handlerMetrics)
 	mux.HandleFunc("POST /admin/reset", apiCfg.handlerReset)
+	mux.HandleFunc("/admin/create_avatars_for_user", apiCfg.handlerCreateAvatarForUser)
 
 	mux.HandleFunc("/api/users", apiCfg.handlerUsersCreate)
 	mux.HandleFunc("/api/login", apiCfg.handlerLogin)
@@ -170,6 +171,9 @@ func main() {
 		Addr:              ":" + port,
 		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
+		WriteTimeout:      5 * time.Minute,  // Allow 5 minutes for the handler to complete and write the response
+		ReadTimeout:       30 * time.Second, // Allow 30 seconds to read the request body
+		IdleTimeout:       5 * time.Minute,
 	}
 
 	log.Printf("Serving files from %s on port: %s\n", filepathRoot, port)
