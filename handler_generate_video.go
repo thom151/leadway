@@ -86,7 +86,7 @@ func (cfg *apiConfig) handlerGenerateVideo(w http.ResponseWriter, r *http.Reques
 
 	seriesWithFIF, err := cfg.uploadVideoToS3(w, r, outputPath, user.ID, seriesWithAudio)
 	if err != nil {
-	rhttps: //leadway-137819198613.australia-southeast2.run.appespondWithError(w, http.StatusInternalServerError, "error uploading fif to s3", err.Error())
+		respondWithError(w, http.StatusInternalServerError, "error uploading fif to s3", err.Error())
 		return
 	}
 
