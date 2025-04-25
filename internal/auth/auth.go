@@ -4,6 +4,8 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"log"
+
 	//	"log"
 
 	//	"log"
@@ -74,14 +76,13 @@ func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
 }
 
 func GetBearerToken(headers http.Header, cookies []*http.Cookie) (string, error) {
-	/*
-		for _, cookie := range cookies {
-			log.Printf("cookie name: %v\n", cookie.Name)
-			if cookie.Name == "acc_token" {
-				return cookie.Value, nil
-			}
+
+	for _, cookie := range cookies {
+		log.Printf("cookie name: %v\n", cookie.Name)
+		if cookie.Name == "acc_token" {
+			return cookie.Value, nil
 		}
-	*/
+	}
 
 	authHeader := headers.Get("Authorization")
 	if authHeader == "" {
