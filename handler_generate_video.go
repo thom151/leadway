@@ -86,7 +86,7 @@ func (cfg *apiConfig) handlerGenerateVideo(w http.ResponseWriter, r *http.Reques
 
 	seriesWithFIF, err := cfg.uploadVideoToS3(w, r, outputPath, user.ID, seriesWithAudio)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "error uploading fif to s3", err.Error())
+	rhttps: //leadway-137819198613.australia-southeast2.run.appespondWithError(w, http.StatusInternalServerError, "error uploading fif to s3", err.Error())
 		return
 	}
 
@@ -98,8 +98,8 @@ func (cfg *apiConfig) handlerGenerateVideo(w http.ResponseWriter, r *http.Reques
 	log.Println("FIF: ", signedFIF.S3Url.String)
 	log.Println("Successfully edited: ", outputPath)
 
-	//	http.Redirect(w, r, fmt.Sprintf("/fif/%s", seriesWithFIF.ID), http.StatusSeeOther)
-	respondWithJSON(w, http.StatusOK, signedFIF)
+	http.Redirect(w, r, fmt.Sprintf("/fif/%s", seriesWithFIF.ID), http.StatusSeeOther)
+	//	respondWithJSON(w, http.StatusOK, signedFIF)
 }
 
 func (cfg *apiConfig) dbAudioToSignedAudio(series database.VideoSeries) (database.VideoSeries, error) {
