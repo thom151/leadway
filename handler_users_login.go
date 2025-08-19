@@ -94,6 +94,7 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		})
 
 		http.Redirect(w, r, "/app", http.StatusSeeOther)
+
 		/*
 			respondWithJSON(w, http.StatusOK, response{
 				User: User{
@@ -108,6 +109,7 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		*/
 
 		return
+
 	}
 
 }

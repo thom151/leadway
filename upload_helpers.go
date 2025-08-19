@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
-	"database/sql"
+	//	"database/sql"
 	"encoding/base64"
 	"fmt"
 	"log"
@@ -84,7 +84,7 @@ func (cfg *apiConfig) dbVideoToSignedVideo(video database.VideoTemplate) (databa
 	if err != nil {
 		return video, err
 	}
-	video.S3Url = sql.NullString{String: presigned, Valid: presigned != ""}
+	video.S3Url.String = presigned
 	return video, nil
 }
 

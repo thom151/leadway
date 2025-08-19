@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
+	//	"io"
 	"log"
 	"net/http"
 	"os"
@@ -25,6 +25,7 @@ type videoSeriesFormat struct {
 	ChannelLayout string
 }
 
+/*
 func (cfg *apiConfig) edit(video, audio, broll, music, userId string, ts []float64) (string, error) {
 	var filesForCleanup []string
 
@@ -33,11 +34,14 @@ func (cfg *apiConfig) edit(video, audio, broll, music, userId string, ts []float
 	if taskPath != audioTaskPath {
 		return "", fmt.Errorf("video and audio file not in the same directory")
 	}
+
+	//this is based on the generated heygen video
 	totalDuration, err := getTotalDuration(video)
 	if err != nil {
 		return "", err
 	}
 
+	//broll 1
 	brollDuration := ts[1] - ts[0]
 
 	if ts[1] > totalDuration || ts[0] > ts[1] {
@@ -116,6 +120,8 @@ func (cfg *apiConfig) edit(video, audio, broll, music, userId string, ts []float
 	return finalVideoOutputPath, nil
 }
 
+*/
+
 func cleanFiles(files []string) error {
 	var errs []string
 	for _, file := range files {
@@ -137,7 +143,7 @@ func overlayAudio(audioPath, musicPath, concatenatedPath, taskPath string, video
 		"-i", audioPath,
 		"-i", musicPath,
 		"-filter_complex",
-		"[1:a]volume=1.5[a1];[2:a]volume=0.3[a2];[a1][a2]amix=inputs=2:duration=first:dropout_transition=0[a]",
+		"[1:a]volume=1.5[a1];[2:a]volume=0.3[a2];[a1][a2]amix=inputs=2:duration=longest:dropout_transition=0[a]",
 		"-map", "0:v:0",
 		"-map", "[a]",
 		"-c:v", "copy",
@@ -192,31 +198,37 @@ func cutAndSaveAudio(audioPath, outputPath string, duration float64, videoFormat
 	fadeDuration := 2.0
 	fadeStart := duration - fadeDuration
 	args := []string{
+		"-ss", "4", // Start 4 seconds into the audio
 		"-i", audioPath,
-		"-t", fmt.Sprintf("%.2f", duration), // Duration to cut
-		"-af", fmt.Sprintf("afade=t=out:st=%.2f:d=%.2f", fadeStart, fadeDuration), // Fade-out filter
+		"-t", fmt.Sprintf("%.2f", duration), // Duration after 4s offset
+		"-af", fmt.Sprintf("volume=0.3,afade=t=out:st=%.2f:d=%.2f", fadeStart, fadeDuration),
+		"-vn",
 		"-c:a", videoFormat.AudioCodec,
 		"-ar", videoFormat.SampleRate,
-		"-channel_layout", videoFormat.ChannelLayout,
+		"-ac", "2",
 		outputPath,
 	}
+
 	//nolint:gosec // G204: safePath-validated
 	cmd := exec.Command("ffmpeg", args...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
-	log.Printf("Running FFmpeg command: %v", cmd.Args)
+	log.Printf("Running cut audio  command: %v", cmd.Args)
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to cut audio: %v, stderr: %s", err, stderr.String())
+		log.Printf("ffmpeg error: %v, stderr: %s", err, stderr.String())
+		return fmt.Errorf("failed to cut audio: %v", err)
 	}
 
 	if _, err := os.Stat(outputPath); err != nil {
-		return fmt.Errorf("output audio file was not created: %v", err)
+		fmt.Errorf("output audio file was not created: %v", err)
+		return err
 	}
 	outputDuration, err := getTotalDuration(outputPath)
 	if err != nil {
-		return fmt.Errorf("output audio file %s is not playable: %v", outputPath, err)
+		fmt.Errorf("output audio file %s is not playable: %v", outputPath, err)
+		return err
 	}
 	log.Printf("Output audio file %s created with duration %.2f seconds", outputPath, outputDuration)
 
@@ -322,7 +334,7 @@ func (cfg *apiConfig) getCutTimestamps(audio string, aiResp openaiSmartResponse)
 		timestamps = append(timestamps, indexTime)
 	}
 
-	if len(timestamps) != 2 {
+	if len(timestamps) != 7 {
 		return nil, err
 	}
 	return timestamps, nil
@@ -340,10 +352,18 @@ func extractAudio(videoPath string) (string, error) {
 	}
 
 	//nolint:gosec // G204: videoPath and audioPath are safePath-validated
-	cmd := exec.Command("ffmpeg", "-i", videoPath, "-vn", "-acodec", "mp3", audioPath)
+	args := []string{
+		"-i", videoPath,
+		"-vn", // no video
+		"-af", "volume=1.5",
+		"-acodec", "mp3",
+		audioPath,
+	}
+
+	cmd := exec.Command("ffmpeg", args...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
-	log.Printf("Running FFmpeg command: %v", cmd.Args)
+	log.Printf("Running ffmpeg extract audio command: %v", cmd.Args)
 	if err := cmd.Run(); err != nil {
 		return "", fmt.Errorf("failed to extract audio: %v", err)
 	}

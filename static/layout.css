@@ -9,6 +9,15 @@ html {
     font-size: 62.5%;
 }
 
+:root {
+    --my-black:#232425;
+    --my-white:#ECF2F7;
+    --my-blue:#ECF2F7;
+    --my-beige:#CCBA91;
+
+    --beige-rgb: rgba(204, 186, 145, 0.4);
+}
+
 body {
     background-color: #19adce;
     padding-top: 80px;
@@ -21,7 +30,7 @@ body {
     padding-left: 20px;
     padding-right: 20px;
     justify-content: space-between;
-    background-color: #a3d026;
+    background-color: #1e1f1e;
     position: fixed;
     height:70px;
     left:0;
@@ -35,7 +44,7 @@ body {
     align-items: center;
 }
 
-.leadway-logo{
+.candid-logo{
     object-fit: contain;
     width: 100px;
 }

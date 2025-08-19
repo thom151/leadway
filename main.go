@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
-	//	"fmt"
+
 	"log"
 	"net/http"
 	"os"
@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/joho/godotenv"
 	"github.com/sashabaranov/go-openai"
+
 	//	"github.com/thom151/leadme/internal/auth"
 	"github.com/thom151/leadme/internal/database"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
@@ -30,6 +31,7 @@ type apiConfig struct {
 	assistantID    string
 	deepgramApiKey string
 	heygenApiKey   string
+	humeApiKey     string
 	s3Bucket       string
 	s3Region       string
 	s3CfDistro     string
@@ -40,7 +42,7 @@ func main() {
 
 	const filepathRoot = "./templates/"
 
-	production := true
+	production := false
 	if !production {
 		err := godotenv.Load()
 		if err != nil {
@@ -72,6 +74,11 @@ func main() {
 	elevenApiKey := os.Getenv("EL_API_KEY")
 	if elevenApiKey == "" {
 		log.Fatal("eleven api key not working")
+	}
+
+	humeApiKey := os.Getenv("HUME_API_KEY")
+	if humeApiKey == "" {
+		log.Fatal("hume api key not available")
 	}
 
 	openaiApiKey := os.Getenv("OPENAI_API_KEY")
@@ -137,6 +144,7 @@ func main() {
 		openaiApiKey:   openaiApiKey,
 		deepgramApiKey: deepgramApiKey,
 		heygenApiKey:   heygenApiKey,
+		humeApiKey:     humeApiKey,
 	}
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
